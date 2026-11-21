@@ -63,7 +63,7 @@ def ssh_base() -> list[str]:
 def include_paths() -> list[str]:
     selected = [
         "src", "Desktop/Git Repos", "loci-web", "loci-web-deploy",
-        "loci-web-deploy (2)", "AGENTS.md",
+        "loci-web-deploy (2)", "AGENTS.md", "Downloads/evidence/README.txt",
     ]
     for pattern in ("loci_*.sh", "loci_*.py"):
         selected.extend(path.name for path in HOME.glob(pattern) if path.is_file() and not path.is_symlink())
