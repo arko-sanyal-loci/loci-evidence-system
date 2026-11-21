@@ -1,0 +1,26 @@
+# Private evidence and workstation state must never enter Git.
+.local-evidence/
+evidence/
+*.age
+*.sqlite*
+*.db
+*.wav
+*.mp3
+*.mp4
+*.webm
+*.mov
+*.mkv
+*.onnx
+*.onnx.json
+.env
+.env.*
+*.agekey
+*.key
+evidence-worker.env
+arc-evidence-token
+arc-memory-recipient
+drive-outbox/
+__pycache__/
+.venv/
+.runtime/
+node_modules/

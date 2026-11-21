@@ -1,0 +1,12 @@
+[Unit]
+Description=Version Arc memory snapshots every fifteen minutes
+
+[Timer]
+OnBootSec=3min
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=30
+Unit=arc-memory-sync.service
+
+[Install]
+WantedBy=timers.target
