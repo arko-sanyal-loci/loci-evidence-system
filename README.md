@@ -16,6 +16,8 @@ calendar exports, operating-system event logs, credentials, or model weights.
 - `evidence_worker.py`: persistent, consent-bound intake from `Downloads/evidence`.
 - `memory_store_sync.py`: age-encrypted, versioned Arc memory snapshots for the
   separate private `arc-private-memory` repository.
+- `workstation_backup.py`: weekly content-addressed source snapshots, encrypted
+  with age before they leave the workstation and copied to the private VPS.
 
 The evidence journal is outside Git in `~/.local/share/loci-evidence/` with
 owner-only permissions. A five-minute persistent user timer ingests only stable
@@ -30,6 +32,12 @@ SQLite memory database and local context journal are copied into a private
 GitHub repository only as age-encrypted, content-addressed snapshots. The
 decryption identity stays on the Arc workstation. The public source repository
 contains code and documentation only, never memory records or original media.
+
+The workstation source backup is managed by the persistent user timer
+`loci-workstation-backup.timer`. It covers selected source repositories and
+workspace guides, excludes runtime environments, caches, raw audio/video and
+database files, and never prunes older VPS snapshots. See
+[INSTALL.md](docs/INSTALL.md#encrypted-workstation-backup) for restore notes.
 
 ## Quick start
 

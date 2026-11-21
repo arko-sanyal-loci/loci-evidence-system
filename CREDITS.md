@@ -17,6 +17,11 @@ evidence-reference route, and persistent user-service setup. These are
 implementation acknowledgements, not a statement of legal authorship or
 ownership. Original media remains outside public source repositories.
 
+Codex also assisted with a deterministic, encrypted workstation source-backup
+utility, its weekly systemd timer, restore documentation, and VPS verification.
+The backup uses a private per-workstation destination configuration and omits
+credential-named files; it does not include the decryption identities.
+
 ## Project-specific attribution
 
 - LOCI Memory Engine: retain the repository's authoritative

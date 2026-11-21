@@ -1,0 +1,19 @@
+[Unit]
+Description=Create encrypted LOCI workstation source backup on the VPS
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/loci-workstation-backup
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallFilter=@system-service
+SystemCallFilter=~@mount
+EnvironmentFile=%h/.config/loci/workstation-backup.env
+ExecStart=/usr/bin/python3 %h/src/loci-workstation/workstation_backup.py
+TimeoutStartSec=infinity

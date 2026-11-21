@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly encrypted LOCI workstation source backup
+
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00
+RandomizedDelaySec=30m
+Persistent=true
+Unit=loci-workstation-backup.service
+
+[Install]
+WantedBy=timers.target

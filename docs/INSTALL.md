@@ -62,3 +62,53 @@ notification when the evidence store reaches 500 MiB.
 The provided systemd units are Linux-specific. On another machine, run the
 manual commands first; adapt the service and OS-specific key paths before
 enabling background sync.
+
+## Encrypted workstation backup
+
+`workstation_backup.py` makes a deterministic, compressed archive of selected
+source workspaces, encrypts it to the age recipient derived from
+`~/.config/loci/backup-key.txt`, then uploads it to the private host and path
+configured in `~/.config/loci/workstation-backup.env` over strict-known-host
+SSH. The SSH identity and pinned `known_hosts` entry must already exist. The
+script refuses to overwrite an archive with a mismatching hash and keeps a
+2 GiB free-space reserve on the VPS. Content-addressed archives deduplicate
+identical source states; the latest pointer is updated atomically. Old archives
+are not automatically deleted. Virtual environments, caches, raw audio/video,
+database files, `.env` files, and credential/token/secret-named files are
+excluded by filename.
+
+Install its persistent weekly user timer:
+
+```bash
+cat > ~/.config/loci/workstation-backup.env <<'EOF'
+LOCI_BACKUP_SSH_HOST=root@YOUR_VPS_HOST
+LOCI_BACKUP_REMOTE_DIR=/root/arko-workstation-backups
+EOF
+chmod 600 ~/.config/loci/workstation-backup.env
+install -m 600 systemd/loci-workstation-backup.service \
+  ~/.config/systemd/user/loci-workstation-backup.service
+install -m 600 systemd/loci-workstation-backup.timer \
+  ~/.config/systemd/user/loci-workstation-backup.timer
+systemctl --user daemon-reload
+systemctl --user enable --now loci-workstation-backup.timer
+systemctl --user start loci-workstation-backup.service
+```
+
+The public source script has no default VPS destination. Keep this environment
+file private and set it to the destination you control before enabling the
+timer.
+
+The local latest pointer is
+`~/.local/state/loci-workstation-backup/WORKSTATION-CODE-LATEST.json`.
+Decrypt an archive with the private identity and inspect it before restoring:
+
+```bash
+age -d -i ~/.config/loci/backup-key.txt \
+  ~/.local/state/loci-workstation-backup/workstation-code-SOURCE_SHA256.tar.gz.age \
+  | tar -tzf -
+```
+
+The age identity is intentionally absent from the VPS archives and GitHub.
+Keep a separate offline recovery copy; without it, archived ciphertext cannot
+be restored. Raw media and local databases are excluded, and evidence and Arc
+memory have their own separate encrypted backup flows.
