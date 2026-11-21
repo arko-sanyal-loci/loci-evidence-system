@@ -68,8 +68,11 @@ proxy hashes and exact frame-map references.
 The 500 MiB total threshold stages a ZIP containing the metadata index,
 video-only proxies and frame maps, then sends a desktop notification. Automatic
 Drive upload occurs only when a Google Drive `rclone` remote and destination
-are configured. Until then, the review ZIP stays in the owner-only local
-outbox; the connected Drive account is not available to a background service.
+are configured. This workstation now has a file-scoped `locievidence:` remote
+bound to the private archive folder. A synthetic upload check confirmed write
+access; no media or personal evidence was uploaded by that check. On systems
+without a configured remote, the review ZIP stays in the owner-only local
+outbox.
 
 The encrypted VPS copy is the source of truth; Arc is a searchable reference,
 never a replacement for the original. The app keeps its API bound to loopback.

@@ -43,9 +43,21 @@ age recipient and Arc bearer token in owner-only files under
 documented in [WORKSPACE-GUIDE.md](../WORKSPACE-GUIDE.md). Never put keys or
 tokens in this repository.
 
-Google Drive upload requires a configured rclone remote. Without one, the
-worker stages a proxy-only review package and sends a desktop notification
-when the evidence store reaches 500 MiB.
+Google Drive upload requires a configured rclone remote and a private
+destination variable in `~/.config/loci/evidence-worker.env`. For example,
+create a file-scoped remote and point it at the authorized archive folder:
+
+```bash
+rclone config create locievidence drive scope drive.file root_folder_id=FOLDER_ID
+printf '%s\n' 'LOCI_EVIDENCE_RCLONE_DEST=locievidence:' \
+  >> ~/.config/loci/evidence-worker.env
+chmod 600 ~/.config/loci/evidence-worker.env
+```
+
+Complete Google's sign-in prompt for rclone. Keep `rclone.conf`, OAuth tokens,
+folder IDs and the environment file out of Git. Without a usable remote and
+destination, the worker stages a proxy-only review package and sends a desktop
+notification when the evidence store reaches 500 MiB.
 
 The provided systemd units are Linux-specific. On another machine, run the
 manual commands first; adapt the service and OS-specific key paths before
