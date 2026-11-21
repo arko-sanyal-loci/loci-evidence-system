@@ -261,6 +261,11 @@ def main() -> int:
         evidence_exists = any(record.get("kind") == "evidence.file_added"
                               and record.get("sha256") not in excluded_hashes
                               for record in journal._records())
+        evidence_file_count = sum(
+            record.get("kind") == "evidence.file_added"
+            and record.get("sha256") not in excluded_hashes
+            for record in journal._records()
+        )
         vps_marker = args.state / "last-vps-journal-hash"
         if evidence_exists and not args.test_mode:
             try:
@@ -276,8 +281,11 @@ def main() -> int:
                                               journal, args.threshold_mib * 1024 * 1024,
                                               allow_upload=not args.test_mode)
         print(json.dumps({"new_files": records_added, "journal_records": len(journal._records()),
+                          "eligible_evidence_files": evidence_file_count,
                           "vps_synced": bool(evidence_exists and not args.test_mode),
                           "arc_references": bool(evidence_exists and not args.test_mode),
+                          "sync_state": ("no_eligible_evidence" if not evidence_exists else
+                                         "test_mode" if args.test_mode else "synced"),
                           "drive_threshold_bytes": usage,
                           "drive_uploaded": uploaded,
                           "journal_verified": True}, sort_keys=True))
