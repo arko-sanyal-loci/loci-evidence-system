@@ -6,7 +6,7 @@
 User places an existing media file
        │
        ▼
-Downloads/evidence ── stable-file timer ──► private SHA-256 object store
+Downloads/Evidence-Intake ── stable-file timer ──► private SHA-256 object store
                                               │
                          ┌────────────────────┴──────────────────┐
                          ▼                                       ▼

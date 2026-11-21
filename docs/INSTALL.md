@@ -35,7 +35,7 @@ does not access a camera or microphone.
 
 ## Optional persistent watcher
 
-The watcher processes only media extensions under `~/Downloads/evidence`.
+The watcher processes only media extensions under `~/Downloads/Evidence-Intake`.
 It waits for each file to remain unchanged for five minutes, then creates a
 private local copy. To enable automatic sync, first configure a VPS SSH key,
 age recipient and Arc bearer token in owner-only files under

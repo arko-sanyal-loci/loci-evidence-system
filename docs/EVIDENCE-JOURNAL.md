@@ -52,7 +52,7 @@ filename and local path.
 
 ## Automatic intake and Arc references
 
-The persistent `loci-evidence-watch.timer` checks `~/Downloads/evidence` every
+The persistent `loci-evidence-watch.timer` checks `~/Downloads/Evidence-Intake` every
 five minutes and waits for an unchanged file for five minutes before intake.
 It accepts regular files only and does not follow symlinks. Video clips are
 split into review-proxy intervals of at most ten minutes. The worker encrypts a

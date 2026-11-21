@@ -46,7 +46,7 @@ other computers, Echo/HomePod, or cameras not exposed to this workstation.
 ## Evidence journal
 
 See [the evidence journal guide](docs/EVIDENCE-JOURNAL.md). Put selected
-existing files in `~/Downloads/evidence`; the persistent watcher waits until
+existing files in `~/Downloads/Evidence-Intake`; the persistent watcher waits until
 each file is stable, then writes originals to
 `~/.local/share/loci-evidence/objects/`, makes a video-only H.264 proxy using
 NVENC where available, and uploads age-encrypted snapshots to the VPS. Arc

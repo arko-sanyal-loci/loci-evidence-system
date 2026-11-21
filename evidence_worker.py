@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Consent-bound worker for files the user places in Downloads/evidence.
+"""Consent-bound worker for files the user places in Downloads/Evidence-Intake.
 
 No capture, transcription, voice identification, or profile inference occurs.
 It waits until files are stable, records them, creates video-only review
@@ -25,7 +25,7 @@ from urllib.request import Request, urlopen
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
 ACCEPTED_EXTENSIONS = VIDEO_EXTENSIONS | {".wav", ".mp3", ".m4a", ".aac", ".flac",
                                           ".jpg", ".jpeg", ".png"}
-DEFAULT_WATCH = Path.home() / "Downloads/evidence"
+DEFAULT_WATCH = Path.home() / "Downloads/Evidence-Intake"
 DEFAULT_ROOT = Path.home() / ".local/share/loci-evidence"
 DEFAULT_STATE = Path.home() / ".local/state/loci-evidence"
 

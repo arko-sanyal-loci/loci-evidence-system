@@ -13,7 +13,7 @@ calendar exports, operating-system event logs, credentials, or model weights.
 - [Credits](CREDITS.md): authorship boundaries and session-specific contribution record.
 - [Evidence journal guide](docs/EVIDENCE-JOURNAL.md): private handling of existing files.
 - `evidence_journal.py`: hash-chained journal and metadata-only Arc index exporter.
-- `evidence_worker.py`: persistent, consent-bound intake from `Downloads/evidence`.
+- `evidence_worker.py`: persistent, consent-bound intake from `Downloads/Evidence-Intake`.
 - `memory_store_sync.py`: age-encrypted, versioned Arc memory snapshots for the
   separate private `arc-private-memory` repository.
 - `workstation_backup.py`: weekly content-addressed source snapshots, encrypted
@@ -21,7 +21,7 @@ calendar exports, operating-system event logs, credentials, or model weights.
 
 The evidence journal is outside Git in `~/.local/share/loci-evidence/` with
 owner-only permissions. A five-minute persistent user timer ingests only stable
-files the user puts in `~/Downloads/evidence`, encrypts a snapshot for the VPS,
+files the user puts in `~/Downloads/Evidence-Intake`, encrypts a snapshot for the VPS,
 and sends metadata-only references to Arc at `127.0.0.1:7860`. It never
 activates a camera or microphone. If the store reaches 500 MiB, it stages a
 proxy-only review package and notifies the user; an rclone Drive destination
