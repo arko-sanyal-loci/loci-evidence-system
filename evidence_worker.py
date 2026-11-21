@@ -277,8 +277,9 @@ def main() -> int:
                 vps_marker.write_text(journal_digest + "\n", encoding="ascii")
                 os.chmod(vps_marker, 0o600)
             post_arc_references(args.root)
+        threshold_bytes = args.threshold_mib * 1024 * 1024
         usage, uploaded = stage_drive_review(journal.root, args.state,
-                                              journal, args.threshold_mib * 1024 * 1024,
+                                              journal, threshold_bytes,
                                               allow_upload=not args.test_mode)
         print(json.dumps({"new_files": records_added, "journal_records": len(journal._records()),
                           "eligible_evidence_files": evidence_file_count,
@@ -286,7 +287,9 @@ def main() -> int:
                           "arc_references": bool(evidence_exists and not args.test_mode),
                           "sync_state": ("no_eligible_evidence" if not evidence_exists else
                                          "test_mode" if args.test_mode else "synced"),
-                          "drive_threshold_bytes": usage,
+                          "drive_evidence_bytes": usage,
+                          "drive_threshold_bytes": threshold_bytes,
+                          "drive_threshold_reached": usage >= threshold_bytes,
                           "drive_uploaded": uploaded,
                           "journal_verified": True}, sort_keys=True))
     except Exception as exc:
