@@ -1,0 +1,19 @@
+[Unit]
+Description=Loopback-only SSH tunnel to VPS Nomic embeddings
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -F /dev/null -i %h/.ssh/arc-nomic-tunnel -o IdentitiesOnly=yes -o UserKnownHostsFile=%h/.ssh/known_hosts -o StrictHostKeyChecking=yes -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -N -L 127.0.0.1:11438:127.0.0.1:11434 nomic-tunnel@187.127.121.247
+Restart=always
+RestartSec=5
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=default.target

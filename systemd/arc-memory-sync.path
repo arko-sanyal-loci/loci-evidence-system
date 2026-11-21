@@ -1,0 +1,10 @@
+[Unit]
+Description=Sync Arc memory after semantic stream journal changes
+
+[Path]
+PathChanged=%h/src/arko-sanyal-loci/arc-canonical/data/semantic_streams.sqlite3
+PathChanged=%h/src/arko-sanyal-loci/arc-canonical/data/semantic_streams.sqlite3-wal
+Unit=arc-memory-sync.service
+
+[Install]
+WantedBy=default.target

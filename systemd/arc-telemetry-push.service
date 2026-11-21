@@ -1,0 +1,21 @@
+[Unit]
+Description=Send minimized Arc readiness to the VPS continuity journal
+After=arc-interface.service arc-monitor.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/src/loci-workstation
+EnvironmentFile=%h/.config/loci/arc-vps-telemetry.env
+ExecStart=/usr/bin/python3 %h/src/loci-workstation/arc_telemetry_push.py
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=%h/.config/loci/arc-vps-telemetry.env
+ReadWritePaths=%h/.local/state/arc-telemetry
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+TimeoutStartSec=20

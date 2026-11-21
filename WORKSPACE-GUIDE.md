@@ -62,7 +62,8 @@ session closes:
 - `arc-interface.service`: Arc web/API UI at <http://127.0.0.1:7860/>.
 - `loci-evidence-watch.timer`: checks the evidence inbox every five minutes.
 - `arc-memory-sync.timer`: versions an encrypted Arc memory snapshot every
-  fifteen minutes in the private `arc-private-memory` repository.
+  fifteen minutes in the private `arc-private-memory` repository and VPS; the
+  companion `arc-memory-sync.path` also syncs after semantic stream changes.
 
 Check status and logs with:
 
@@ -71,6 +72,20 @@ systemctl --user --no-pager status arc-monitor.service arc-interface.service
 systemctl --user --no-pager status loci-evidence-watch.timer arc-memory-sync.timer
 journalctl --user -u loci-evidence-watch.service -u arc-memory-sync.service -n 50 --no-pager
 ```
+
+## Remote continuity chat
+
+When the workstation is powered down, open <https://billo.tech/arko/chat> from
+another device. The username is `arko`; the owner password is stored in
+`~/.config/loci/billo-chat.credentials` with file mode `0600`. Read it before
+powering down if you will need to sign in elsewhere. The VPS runs a local
+Ollama chat model and local CPU Whisper transcription; voice clips are sent
+only when you press **Record voice**, transcribed, and discarded. The page shows
+the last authenticated workstation report and marks it offline after 75 seconds
+without a heartbeat. **Record notice** adds a hash-chained maintenance event.
+Only the owner login and a separate workstation telemetry token are configured;
+Claude, Gemini, Copilot, and Codex do not yet have individual credentials or
+access to this journal. The page cannot inspect the workstation while it is off.
 
 The watcher currently has no evidence clips to ingest. Havit/GK51 was detected,
 but its input was silent in earlier direct checks, so it is not a verified

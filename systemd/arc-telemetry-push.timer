@@ -1,0 +1,12 @@
+[Unit]
+Description=Send Arc readiness heartbeat every twenty seconds
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=20s
+AccuracySec=5s
+Persistent=true
+Unit=arc-telemetry-push.service
+
+[Install]
+WantedBy=timers.target

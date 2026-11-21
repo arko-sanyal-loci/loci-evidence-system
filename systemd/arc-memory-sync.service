@@ -1,18 +1,19 @@
 [Unit]
-Description=Encrypt and version the Arc memory store in its private Git repository
+Description=Encrypt Arc memory snapshots to the private Git repository and VPS
 After=arc-interface.service network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
 WorkingDirectory=%h/src/loci-workstation
-ExecStart=/usr/bin/python3 %h/src/loci-workstation/memory_store_sync.py --ssh-key %h/.ssh/arc-memory-deploy
+EnvironmentFile=-%h/.config/loci/workstation-backup.env
+ExecStart=/usr/bin/python3 %h/src/loci-workstation/memory_store_sync.py --ssh-key %h/.ssh/arc-memory-deploy --vps-ssh-key %h/.ssh/codex_billo_backup_20261120 --known-hosts %h/.ssh/known_hosts
 UMask=0077
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
-ReadOnlyPaths=%h/.ssh/arc-memory-deploy %h/.ssh/known_hosts %h/.config/loci/arc-memory.agekey %h/.config/loci/arc-memory-recipient %h/src/arko-sanyal-loci/arc-canonical/data/arc.db %h/.local/state/loci-session/context-journal.jsonl
+ReadOnlyPaths=%h/.ssh/arc-memory-deploy %h/.ssh/codex_billo_backup_20261120 %h/.ssh/known_hosts %h/.config/loci/workstation-backup.env %h/.config/loci/arc-memory.agekey %h/.config/loci/arc-memory-recipient %h/src/arko-sanyal-loci/arc-canonical/data/arc.db %h/src/arko-sanyal-loci/arc-canonical/data/semantic_streams.sqlite3 %h/.local/state/loci-session/context-journal.jsonl
 ReadWritePaths=%h/src/arko-sanyal-loci/arc-private-memory
 RestrictSUIDSGID=yes
 LockPersonality=yes

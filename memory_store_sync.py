@@ -8,10 +8,12 @@ import hashlib
 import os
 from pathlib import Path
 import shutil
+import shlex
 import sqlite3
 import subprocess
 import tarfile
 import tempfile
+from pathlib import PurePosixPath
 
 
 def digest_file(path: Path) -> str:
@@ -60,15 +62,45 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path.home() / "src/arko-sanyal-loci/arc-private-memory")
     parser.add_argument("--db", type=Path, default=Path.home() / "src/arko-sanyal-loci/arc-canonical/data/arc.db")
+    parser.add_argument("--streams-db", type=Path,
+                        default=Path.home() / "src/arko-sanyal-loci/arc-canonical/data/semantic_streams.sqlite3")
     parser.add_argument("--context-journal", type=Path,
                         default=Path.home() / ".local/state/loci-session/context-journal.jsonl")
     parser.add_argument("--recipient-file", type=Path,
                         default=Path.home() / ".config/loci/arc-memory-recipient")
     parser.add_argument("--ssh-key", type=Path, default=Path.home() / ".ssh/arc-memory-deploy")
+    parser.add_argument("--vps-ssh-key", type=Path,
+                        default=Path.home() / ".ssh/codex_billo_backup_20261120")
+    parser.add_argument("--known-hosts", type=Path, default=Path.home() / ".ssh/known_hosts")
+    parser.add_argument("--vps-host", default=os.environ.get("LOCI_BACKUP_SSH_HOST", ""))
+    parser.add_argument("--vps-dir", default=os.environ.get("LOCI_MEMORY_VPS_DIR", ""))
+    parser.add_argument("--min-free-kib", type=int, default=2 * 1024 * 1024)
     args = parser.parse_args()
     repo = args.repo.expanduser().resolve()
     if not (repo / ".git").is_dir():
         raise SystemExit("private memory repository is not initialized")
+    if args.min_free_kib < 0 or shutil.disk_usage(repo).free // 1024 < args.min_free_kib:
+        raise SystemExit("local free space is below the configured memory snapshot reserve")
+    if args.vps_host:
+        if not args.vps_ssh_key.expanduser().is_file() or not args.known_hosts.expanduser().is_file():
+            raise SystemExit("VPS memory backup SSH key or known_hosts file is missing")
+        vps_base = [
+            "ssh", "-F", "/dev/null", "-i", str(args.vps_ssh_key.expanduser()),
+            "-o", "IdentitiesOnly=yes", "-o", f"UserKnownHostsFile={args.known_hosts.expanduser()}",
+            "-o", "StrictHostKeyChecking=yes", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
+        ]
+        backup_root = os.environ.get("LOCI_BACKUP_REMOTE_DIR", "/root/arko-workstation-backups")
+        free_output = subprocess.run(
+            [*vps_base, args.vps_host,
+             f"df -Pk {shlex.quote(backup_root)} | tail -1 | awk '{{print $4}}'"],
+            check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ).stdout.strip()
+        try:
+            remote_free_kib = int(free_output)
+        except ValueError:
+            raise SystemExit("could not read available VPS storage") from None
+        if remote_free_kib < args.min_free_kib:
+            raise SystemExit("VPS free space is below the configured memory snapshot reserve")
     recipient = args.recipient_file.read_text(encoding="ascii").strip()
     if not recipient.startswith("age1"):
         raise SystemExit("invalid Arc memory encryption recipient")
@@ -79,6 +111,11 @@ def main() -> int:
         db_copy = temp / "arc-memory.sqlite3"
         snapshot_sqlite(args.db.expanduser(), db_copy)
         sources = [(db_copy, "arc-memory.sqlite3")]
+        streams_source = args.streams_db.expanduser()
+        if streams_source.is_file():
+            streams_copy = temp / "semantic-streams.sqlite3"
+            snapshot_sqlite(streams_source, streams_copy)
+            sources.append((streams_copy, "semantic-streams.sqlite3"))
         if args.context_journal.expanduser().is_file():
             journal = args.context_journal.expanduser()
             before = journal.stat()
@@ -120,7 +157,48 @@ def main() -> int:
         action = "unchanged"
     else:
         raise SystemExit("could not inspect staged memory snapshot")
-    print(f"memory snapshot {action}; sha256={digest[:16]}; files={len(sources)}")
+    vps_state = "not_configured"
+    if args.vps_host:
+        backup_root = os.environ.get("LOCI_BACKUP_REMOTE_DIR", "/root/arko-workstation-backups")
+        remote_dir = args.vps_dir or os.environ.get(
+            "LOCI_MEMORY_VPS_DIR", str(PurePosixPath(backup_root) / "arc-memory")
+        )
+        remote_root = PurePosixPath(remote_dir)
+        if not remote_root.is_absolute() or ".." in remote_root.parts:
+            raise SystemExit("unsafe VPS memory snapshot directory")
+        remote_path = str(remote_root / encrypted.name)
+        remote_part = remote_path + ".part"
+        ssh_base = [
+            "ssh", "-F", "/dev/null", "-i", str(args.vps_ssh_key.expanduser()),
+            "-o", "IdentitiesOnly=yes", "-o", f"UserKnownHostsFile={args.known_hosts.expanduser()}",
+            "-o", "StrictHostKeyChecking=yes", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
+        ]
+        quote = shlex.quote
+        run([*ssh_base, args.vps_host, f"install -d -m 700 {quote(remote_dir)}"], cwd=repo)
+        check = subprocess.run(
+            [*ssh_base, args.vps_host,
+             f"if test -f {quote(remote_path)}; then sha256sum {quote(remote_path)}; fi"],
+            check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ).stdout.strip()
+        cipher_hash = digest_file(encrypted)
+        if check:
+            if check.split()[0] != cipher_hash:
+                raise SystemExit("VPS memory snapshot exists but failed content hash verification")
+            vps_state = "already_present"
+        else:
+            run([
+                "scp", "-F", "/dev/null", "-i", str(args.vps_ssh_key.expanduser()),
+                "-o", "IdentitiesOnly=yes", "-o", f"UserKnownHostsFile={args.known_hosts.expanduser()}",
+                "-o", "StrictHostKeyChecking=yes", "-o", "BatchMode=yes",
+                str(encrypted), f"{args.vps_host}:{remote_part}",
+            ], cwd=repo)
+            run([*ssh_base, args.vps_host,
+                 f"set -eu; chmod 600 {quote(remote_part)}; "
+                 f"printf '%s  %s\\n' {quote(cipher_hash)} {quote(remote_part)} | sha256sum --check --status; "
+                 f"mv -T {quote(remote_part)} {quote(remote_path)}; "
+                 f"printf '%s  %s\\n' {quote(cipher_hash)} {quote(remote_path)} | sha256sum --check --status"], cwd=repo)
+            vps_state = "uploaded"
+    print(f"memory snapshot {action}; vps={vps_state}; sha256={digest[:16]}; files={len(sources)}")
     return 0
 
 

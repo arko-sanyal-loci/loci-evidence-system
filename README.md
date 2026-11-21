@@ -15,7 +15,7 @@ calendar exports, operating-system event logs, credentials, or model weights.
 - `evidence_journal.py`: hash-chained journal and metadata-only Arc index exporter.
 - `evidence_worker.py`: persistent, consent-bound intake from `Downloads/Evidence-Intake`.
 - `memory_store_sync.py`: age-encrypted, versioned Arc memory snapshots for the
-  separate private `arc-private-memory` repository.
+  private `arc-private-memory` repository and VPS archive.
 - `workstation_backup.py`: weekly content-addressed source snapshots, encrypted
   with age before they leave the workstation and copied to the private VPS.
 
@@ -29,9 +29,12 @@ must be configured before background Drive upload can occur.
 
 Arc runs as a separate loopback-only persistent service on port 7860. Arc's
 SQLite memory database and local context journal are copied into a private
-GitHub repository only as age-encrypted, content-addressed snapshots. The
-decryption identity stays on the Arc workstation. The public source repository
-contains code and documentation only, never memory records or original media.
+private GitHub repository and VPS archive only as age-encrypted,
+content-addressed snapshots. The sync runs after semantic-stream journal
+changes and every fifteen minutes as a fallback. It checks for a 2 GiB local
+and VPS free-space reserve before creating a snapshot. The decryption identity
+stays on the Arc workstation. The public source repository contains code and
+documentation only, never memory records or original media.
 
 The workstation source backup is managed by the persistent user timer
 `loci-workstation-backup.timer`. It covers selected source repositories and
