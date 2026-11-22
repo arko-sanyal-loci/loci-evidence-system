@@ -64,6 +64,9 @@ def include_paths() -> list[str]:
     selected = [
         "src", "Desktop/Git Repos", "loci-web", "loci-web-deploy",
         "loci-web-deploy (2)", "AGENTS.md", "Downloads/Evidence-Intake/README.txt",
+        # Preserve the verified Hostinger WordPress export, including its SQL
+        # dump, inside the outer age-encrypted VPS source snapshot.
+        "Downloads/Backups/EvolutionVapes-Hostinger-2026-11-21",
     ]
     for pattern in ("loci_*.sh", "loci_*.py"):
         selected.extend(path.name for path in HOME.glob(pattern) if path.is_file() and not path.is_symlink())

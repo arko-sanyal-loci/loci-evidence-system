@@ -75,7 +75,9 @@ script refuses to overwrite an archive with a mismatching hash and keeps a
 identical source states; the latest pointer is updated atomically. Old archives
 are not automatically deleted. Virtual environments, caches, raw audio/video,
 database files, `.env` files, and credential/token/secret-named files are
-excluded by filename.
+excluded by filename. The verified Evolution Vapes Hostinger backup archive
+and its compressed SQL dump are explicitly included as an exception; both are
+inside the outer age-encrypted archive and are not committed to GitHub.
 
 Install its persistent weekly user timer:
 
@@ -110,5 +112,5 @@ age -d -i ~/.config/loci/backup-key.txt \
 
 The age identity is intentionally absent from the VPS archives and GitHub.
 Keep a separate offline recovery copy; without it, archived ciphertext cannot
-be restored. Raw media and local databases are excluded, and evidence and Arc
-memory have their own separate encrypted backup flows.
+be restored. Raw media and standalone local databases are excluded, and
+evidence and Arc memory have their own separate encrypted backup flows.

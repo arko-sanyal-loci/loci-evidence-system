@@ -38,8 +38,10 @@ documentation only, never memory records or original media.
 
 The workstation source backup is managed by the persistent user timer
 `loci-workstation-backup.timer`. It covers selected source repositories and
-workspace guides, excludes runtime environments, caches, raw audio/video and
-database files, and never prunes older VPS snapshots. See
+workspace guides, and includes the verified Evolution Vapes Hostinger export
+under `Downloads/Backups/` inside the outer age-encrypted archive. It excludes
+runtime environments, caches, raw audio/video and standalone database files,
+and never prunes older VPS snapshots. See
 [INSTALL.md](docs/INSTALL.md#encrypted-workstation-backup) for restore notes.
 
 ## Quick start
