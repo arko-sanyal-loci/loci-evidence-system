@@ -1,9 +1,9 @@
 [Unit]
-Description=Version Arc memory snapshots every fifteen minutes
+Description=Version Arc memory snapshots every hour
 
 [Timer]
 OnBootSec=3min
-OnCalendar=*:0/15
+OnCalendar=hourly
 Persistent=true
 RandomizedDelaySec=30
 Unit=arc-memory-sync.service

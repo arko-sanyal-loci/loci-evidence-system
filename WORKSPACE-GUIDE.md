@@ -61,8 +61,9 @@ session closes:
 - `arc-monitor.service`: local HUD and opt-in A/V monitor on port 11500.
 - `arc-interface.service`: Arc web/API UI at <http://127.0.0.1:7860/>.
 - `loci-evidence-watch.timer`: checks the evidence inbox every five minutes.
-- `arc-memory-sync.timer`: versions an encrypted Arc memory snapshot every
-  fifteen minutes in the private `arc-private-memory` repository and VPS; the
+- `arc-memory-sync.timer`: versions an encrypted Arc memory snapshot hourly in
+  the private `arc-private-memory` repository and VPS, retaining at most 500
+  good states; the
   companion `arc-memory-sync.path` also syncs after semantic stream changes.
 
 Check status and logs with:

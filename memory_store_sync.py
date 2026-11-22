@@ -49,6 +49,20 @@ def add_to_tar(tar: tarfile.TarFile, source: Path, name: str) -> None:
     tar.addfile(info, io.BytesIO(data))
 
 
+def prune_snapshots(directory: Path, retention: int) -> int:
+    if retention < 1:
+        raise ValueError("retention must be at least one snapshot")
+    snapshots = sorted(
+        directory.glob("*.tar.gz.age"),
+        key=lambda path: path.stat().st_mtime_ns,
+        reverse=True,
+    )
+    removed = snapshots[retention:]
+    for path in removed:
+        path.unlink()
+    return len(removed)
+
+
 def run(argv: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(argv, cwd=cwd, env=env, check=True,
@@ -74,8 +88,12 @@ def main() -> int:
     parser.add_argument("--known-hosts", type=Path, default=Path.home() / ".ssh/known_hosts")
     parser.add_argument("--vps-host", default=os.environ.get("LOCI_BACKUP_SSH_HOST", ""))
     parser.add_argument("--vps-dir", default=os.environ.get("LOCI_MEMORY_VPS_DIR", ""))
+    parser.add_argument("--retention", type=int, default=500,
+                        help="maximum encrypted snapshots retained in each backup store")
     parser.add_argument("--min-free-kib", type=int, default=2 * 1024 * 1024)
     args = parser.parse_args()
+    if args.retention < 1:
+        raise SystemExit("retention must be at least one snapshot")
     repo = args.repo.expanduser().resolve()
     if not (repo / ".git").is_dir():
         raise SystemExit("private memory repository is not initialized")
@@ -198,7 +216,29 @@ def main() -> int:
                  f"mv -T {quote(remote_part)} {quote(remote_path)}; "
                  f"printf '%s  %s\\n' {quote(cipher_hash)} {quote(remote_path)} | sha256sum --check --status"], cwd=repo)
             vps_state = "uploaded"
-    print(f"memory snapshot {action}; vps={vps_state}; sha256={digest[:16]}; files={len(sources)}")
+        remote_prune = (
+                 f"find {shlex.quote(remote_dir)} -maxdepth 1 -type f "
+                 f"-name '*.tar.gz.age' -printf '%T@ %p\\n' | sort -nr | "
+                 f"tail -n +{args.retention + 1} | cut -d' ' -f2- | "
+                 "while IFS= read -r path; do test -z \"$path\" || rm -f -- \"$path\"; done"
+        )
+        run([*ssh_base, args.vps_host, remote_prune], cwd=repo)
+        vps_state = f"{vps_state};retained<={args.retention}"
+    removed = prune_snapshots(snapshots, args.retention)
+    if removed:
+        git_env = os.environ.copy()
+        git_env["GIT_SSH_COMMAND"] = (
+                 f"ssh -F /dev/null -i {args.ssh_key.expanduser()} -o IdentitiesOnly=yes "
+                 "-o BatchMode=yes -o StrictHostKeyChecking=yes"
+        )
+        run(["git", "add", "snapshots"], cwd=repo, env=git_env)
+        run(["git", "-c", "user.name=Arc Memory Sync", "-c",
+                  "user.email=arc-memory@localhost", "commit", "-m",
+                  f"Prune encrypted memory snapshots beyond {args.retention}"], cwd=repo, env=git_env)
+        run(["git", "push", "origin", "HEAD:main"], cwd=repo, env=git_env)
+        action = f"{action};pruned={removed}"
+    print(f"memory snapshot {action}; vps={vps_state}; retained<={args.retention}; "
+          f"sha256={digest[:16]}; files={len(sources)}")
     return 0
 
 
