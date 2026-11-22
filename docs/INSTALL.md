@@ -114,3 +114,9 @@ The age identity is intentionally absent from the VPS archives and GitHub.
 Keep a separate offline recovery copy; without it, archived ciphertext cannot
 be restored. Raw media and standalone local databases are excluded, and
 evidence and Arc memory have their own separate encrypted backup flows.
+
+The public age recipient is sufficient for the backup process to encrypt data;
+the VPS does not need the private age identity. Do not store the identity in
+the VPS, GitHub, or Arc's agent-readable memory. Passport and national-ID
+documents are not encryption keys; keep any such records in a separate
+user-controlled encrypted vault.

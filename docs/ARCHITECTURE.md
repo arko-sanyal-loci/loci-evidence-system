@@ -37,6 +37,13 @@ workstation-only age identity decrypts it. A repository-scoped GitHub deploy
 key lets the workstation update that repository; no public source repository
 receives snapshots or keys.
 
+The age **recipient** is the public encryption key; it may be available to the
+backup process. The age **identity** is the private decryption key and must
+stay off the VPS, GitHub and agent-readable memory. Keep a separate recovery
+copy in a user-controlled offline vault. Personal identity documents such as
+passport or national ID are unrelated to this cryptographic key and must not be
+added to the agent profile or backup key store.
+
 ## Trust boundaries
 
 - Local state, object store, tokens and age identity are owner-only files.
