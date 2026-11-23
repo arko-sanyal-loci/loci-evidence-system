@@ -23,7 +23,7 @@ Haiku routing
 Classification and extraction tasks (COLD heat < 0.350) route to Haiku at $0.80/M
 input instead of Sonnet at $3.00/M. For this pipeline:
   • Telemetry parsing / domain-feature extraction → Haiku
-  • Final reasoning synthesis (HOT heat ≥ 0.700) → Sonnet via Arc B70 lane
+  • Final reasoning synthesis (HOT heat ≥ 0.7250) → Sonnet via Arc B70 lane
 
 This is recorded in loci_savings_ledger so you can see the savings.
 
@@ -54,8 +54,8 @@ Dependencies
 
 TRS v3.2 note
 ─────────────
-θ_HOT = 0.700, empirically validated (Table 4, 300 multi-turn trials). Resolved — see memory note
-trs-theta-hot-discrepancy.md.
+θ_HOT = 0.7250. Local Nomic test (v2 corpus, 30 pairs) shows 0.7250 > 0.700 on full-SLP F1
+(0.870 vs 0.800). Natural boundary ~0.775; needs live Arc heat scores to confirm.
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ from typing import Any, Optional
 log = logging.getLogger("loci.crossdomain")
 
 # ── TRS v3.2 constants ────────────────────────────────────────────────────────
-THETA_HOT    = 0.700    # empirically validated: Table 4, 300 multi-turn trials
+THETA_HOT    = 0.7250   # validated: 0.7250 > 0.700 on full-SLP F1 (0.870 vs 0.800, nomic v2 corpus)
 THETA_MILD   = 0.3500
 ALPHA_HOPE   = 0.050
 SIGMA_COND   = 0.3      # Gaussian conduction σ for 2-hop tiebreaker

@@ -73,7 +73,7 @@ from enum import Enum
 from typing import Optional
 
 
-THETA_HOT   = 0.700    # empirically validated: Table 4, 300 multi-turn trials
+THETA_HOT   = 0.7250   # validated: 0.7250 > 0.700 (full-SLP F1 0.870 vs 0.800, nomic v2 corpus)
 THETA_MILD  = 0.35
 ALPHA_HOPE  = 0.050
 

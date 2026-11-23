@@ -166,7 +166,7 @@
       "DSymPrev": "arc_b70",   "MSymPrev": "iphone_ane",
       "SSymPrev": "rtx_5060ti"
     },
-    "theta_hot": 0.700,
+    "theta_hot": 0.7250,
     "multihop_sigma": 0.3,
     "emit_to_bus": true,
     "note": "Fixes single-slice problem: nomic was used for one cosine only; now 5 parallel stream-specific embeddings with MRL dimension allocation and multi-hop tie-breaking (1,000x amplification)"
@@ -202,7 +202,7 @@
     "module": "loci_dynamic_relationships.RelationshipStore",
     "enabled": true,
     "halflife_hours": 72,
-    "theta_hot": 0.700,
+    "theta_hot": 0.7250,
     "append_only": true,
     "export_stream": "QSymPrev",
     "note": "Relationships are versioned temporal states, never static edges. Active HOT nodes injected into QSymPrev at every prompt."
@@ -241,7 +241,7 @@
     },
     "arc_hub": {
       "lane_id":  "LOCAL_ARC_PRO_B70",
-      "heat_min": 0.700,
+      "heat_min": 0.7250,
       "role":     "primary_inference_and_embedding_hub"
     },
     "layout_modes": {

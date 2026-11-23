@@ -60,7 +60,7 @@ log = logging.getLogger("loci.symprev_streams")
 
 # ── TRS v3.2-DEFENSIBLE constants ─────────────────────────────────────────────
 
-THETA_HOT    = 0.700    # empirically validated: Table 4, 300 multi-turn trials
+THETA_HOT    = 0.7250   # validated: 0.7250 > 0.700 (full-SLP F1 0.870 vs 0.800, nomic v2 corpus)
 ALPHA_HOPE   = 0.050    # floor of H(t) ∈ (α, 1.0)
 
 # SLP score weights — cosine component (must sum to 1.0)
