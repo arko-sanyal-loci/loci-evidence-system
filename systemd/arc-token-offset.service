@@ -1,0 +1,39 @@
+[Unit]
+Description=Arc B70 token offset service — always-on GPU compute
+Documentation=https://github.com/arko-sanyal-loci/arc
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/src/loci-workstation
+ExecStart=%h/src/loci-workstation/.venv/bin/python \
+    %h/Documents/loci-workstation/anti-gravity-ide-multiagent-a0d759/arc_token_offset.py
+
+# Never give up — restart immediately on any failure, including bad graphs
+Restart=always
+RestartSec=2
+StartLimitBurst=20
+StartLimitIntervalSec=60
+
+# Watchdog so a hung GPU call gets recovered automatically
+WatchdogSec=30
+TimeoutStartSec=15
+TimeoutStopSec=10
+
+# Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/arc-token-offset
+UMask=0077
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+RestrictSUIDSGID=yes
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=arc-token-offset
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,128 @@
+{
+  "_comment": "Anti-gravity IDE — multi-agent edition for the loci-workstation",
+  "_version": "2.1",
+
+  "workspace": {
+    "name": "Anti-gravity · Arc + Codex",
+    "root": ".",
+    "icon": "🪐",
+    "theme": "dark",
+    "org": "billo-tech"
+  },
+
+  "agents": {
+    "arc": {
+      "role": "primary",
+      "description": "Local reasoning — Loci memory, dual-GPU inference, always sovereign",
+      "endpoint": "http://localhost:7860",
+      "mcp_endpoint": "http://localhost:7860/mcp",
+      "tools": ["arc_chat", "arc_memory_search", "arc_status", "arc_token_offset"],
+      "auto_connect": true,
+      "keepalive_ms": 10000
+    },
+    "codex": {
+      "role": "code",
+      "description": "Code generation — OpenAI Codex via Responses API",
+      "model": "codex-mini-latest",
+      "tools": ["code_interpreter", "web_search"],
+      "auto_connect": true
+    },
+    "claude": {
+      "role": "orchestrator",
+      "description": "Session orchestrator — Claude Code driving the other agents",
+      "model": "claude-sonnet-4-6",
+      "mcp_bus": "http://localhost:8765/mcp",
+      "auto_connect": true
+    }
+  },
+
+  "layout": {
+    "panels": [
+      {
+        "id": "arc-center",
+        "agent": "arc",
+        "type": "chat",
+        "title": "Arc  ·  Local",
+        "position": "center",
+        "default": true,
+        "width_pct": 50
+      },
+      {
+        "id": "codex-left",
+        "agent": "codex",
+        "type": "code",
+        "title": "Codex",
+        "position": "left",
+        "width_pct": 25
+      },
+      {
+        "id": "claude-right",
+        "agent": "claude",
+        "type": "chat",
+        "title": "Claude Code",
+        "position": "right",
+        "width_pct": 25
+      },
+      {
+        "id": "bus-status",
+        "type": "iframe",
+        "title": "Bus Stream",
+        "url": "http://localhost:8765/status",
+        "position": "bottom",
+        "height": 160,
+        "refresh_ms": 3000
+      },
+      {
+        "id": "gpu-offset",
+        "type": "iframe",
+        "title": "Arc Token Offset",
+        "url": "http://localhost:9099/status",
+        "position": "bottom",
+        "height": 160,
+        "refresh_ms": 5000
+      }
+    ]
+  },
+
+  "coordination_bus": {
+    "socket": "/run/user/1000/loci-bus.sock",
+    "ws_port": 8765,
+    "stream_port": 8766,
+    "always_on": true
+  },
+
+  "token_offset": {
+    "service_port": 9099,
+    "primary_device": 1,
+    "fallback_device": 0,
+    "fault_tolerant": true
+  },
+
+  "tasks": [
+    {
+      "label": "Start All Services",
+      "type": "shell",
+      "command": "bash scripts/start_all.sh",
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "Start Bus Stream",
+      "type": "shell",
+      "command": "systemctl --user start loci-bus-stream.socket",
+      "group": "build"
+    },
+    {
+      "label": "Start Arc Token Offset",
+      "type": "shell",
+      "command": "systemctl --user start arc-token-offset.service",
+      "group": "build"
+    }
+  ],
+
+  "keybindings": [
+    { "key": "ctrl+shift+a", "command": "arc.focusChat" },
+    { "key": "ctrl+shift+c", "command": "codex.focusCode" },
+    { "key": "ctrl+shift+b", "command": "bus.showStatus" },
+    { "key": "ctrl+shift+g", "command": "gpu.showOffset" }
+  ]
+}
