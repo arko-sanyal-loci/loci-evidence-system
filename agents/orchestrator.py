@@ -5,6 +5,10 @@ Flow:
   User prompt → route_intent() → dispatch to Arc / Codex / both
   All agent turns are logged to the LOCI coordination bus.
   Arc is always tried first; Codex supplements on code-heavy intents.
+
+Token savings are automatically applied via loci_token_hook.wrap_anthropic_client()
+if an anthropic.Anthropic() client is passed to run_turn().  Arc being GPU-busy
+(Dexter's Lab) is fine — heat lookups time out in 1.5 s.
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sys
 import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -200,10 +205,34 @@ async def run_turn(prompt: str) -> Turn:
     return turn
 
 
+# ── LOCI token savings hook (optional) ───────────────────────────────────────
+
+def attach_token_savings(anthropic_client: Any) -> None:
+    """
+    Call once after creating an anthropic.Anthropic() client to activate LOCI
+    prompt-caching breakpoints and savings ledger tracking.
+
+    Example:
+        import anthropic
+        from agents.orchestrator import attach_token_savings
+        client = anthropic.Anthropic()
+        attach_token_savings(client)
+    """
+    try:
+        # Import from the workspace root
+        _root = str(__import__("pathlib").Path(__file__).parent.parent)
+        if _root not in __import__("sys").path:
+            __import__("sys").path.insert(0, _root)
+        from loci_token_hook import wrap_anthropic_client, savings_summary  # type: ignore
+        wrap_anthropic_client(anthropic_client)
+        print(f"[loci-hook] Token savings active → {savings_summary()['ledger']}")
+    except Exception as exc:
+        print(f"[loci-hook] Could not attach (non-fatal): {exc}", file=sys.stderr)
+
+
 # ── CLI smoke test ─────────────────────────────────────────────────────────────
 
 async def _main() -> None:
-    import sys
     prompt = " ".join(sys.argv[1:]) or "What is the current GPU memory status?"
     print(f"Intent: {route_intent(prompt).name}")
     turn = await run_turn(prompt)
