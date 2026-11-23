@@ -60,7 +60,7 @@ log = logging.getLogger("loci.symprev_streams")
 
 # ── TRS v3.2-DEFENSIBLE constants ─────────────────────────────────────────────
 
-THETA_HOT    = 0.7250   # calibrated: 6.94 items, 100% recall, 0% noise
+THETA_HOT    = 0.700    # empirically validated: Table 4, 300 multi-turn trials
 ALPHA_HOPE   = 0.050    # floor of H(t) ∈ (α, 1.0)
 
 # SLP score weights — cosine component (must sum to 1.0)

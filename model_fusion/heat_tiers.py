@@ -12,7 +12,7 @@ from enum import Enum, auto
 
 # ── Tier boundaries (must stay in sync with arc/core/heat.py) ────────────────
 
-TIER_HOT_BOUNDARY:        float = 0.7250  # H ≥ 0.7250 → HOT / VRAM (TRS v3.2: θ_HOT calibrated)
+TIER_HOT_BOUNDARY:        float = 0.700   # H ≥ 0.700 → HOT / VRAM (empirically validated, Table 4)
 TIER_MILD_BOUNDARY:       float = 0.35   # H ≥ 0.35 → MILD / DDR5
 VRAM_ADMISSION_THRESHOLD: float = 0.70   # crossing this promotes to VRAM
 

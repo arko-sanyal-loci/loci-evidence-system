@@ -12,7 +12,7 @@ Anthropic prompt caching (https://platform.claude.com/docs/prompt-caching):
   • Net saving once a prefix is cached: 90 tokens saved per 100 tokens re-read.
 
 LOCI heat tiers (from arc/core/cache_layer.py):
-  HOT  heat ≥ 0.7250 → extended TTL (1 hr)  — θ_HOT TRS v3.2 calibrated
+  HOT  heat ≥ 0.700  → extended TTL (1 hr)  — θ_HOT empirically validated (Table 4)
   MILD heat ≥ 0.350  → ephemeral TTL (5 min) — standard
   COLD heat <  0.350 → not cached
 
@@ -118,7 +118,7 @@ def _arc_heat(text: str, timeout: float = 1.5) -> float:
 # ── Cache breakpoint annotation ───────────────────────────────────────────────
 
 def _ttl_for_heat(heat: float) -> str:
-    if heat >= 0.7250:   # θ_HOT TRS v3.2
+    if heat >= 0.700:    # θ_HOT empirically validated (Table 4, 300 trials)
         return "extended"
     if heat >= 0.35:
         return "ephemeral"

@@ -61,7 +61,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 log = logging.getLogger(__name__)
 
 # ── TRS v3.2 boundary (must stay in sync with model_fusion/heat_tiers.py) ───
-THETA_HOT: float = 0.7250
+THETA_HOT: float = 0.700    # empirically validated: Table 4, 300 multi-turn trials
 
 # ── CARD archetypes that trigger MULTI_AGENT mode ───────────────────────────
 MULTI_AGENT_ARCHETYPES = frozenset({
