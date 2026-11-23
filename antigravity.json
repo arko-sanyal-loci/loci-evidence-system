@@ -228,6 +228,42 @@
     "fault_tolerant": true
   },
 
+  "streaming_mode": {
+    "_comment": "Fluid streaming: tokens render live (ChatGPT-style SSE), layout morphs mid-stream when CARD archetype demands multi-agent IDE",
+    "enabled": true,
+    "style": "fluid",
+    "router": "loci_streaming_router.FluidStreamingRouter",
+    "sse_events": ["text_delta", "mode.transition", "glassbox.monitor"],
+    "transition_trigger": {
+      "source":     "card_archetype",
+      "archetypes": ["multi_session_reasoning", "speculative_stream_synthesis"],
+      "timing":     "pre_first_token"
+    },
+    "arc_hub": {
+      "lane_id":  "LOCAL_ARC_PRO_B70",
+      "heat_min": 0.7250,
+      "role":     "primary_inference_and_embedding_hub"
+    },
+    "layout_modes": {
+      "standard": {
+        "panels": ["chat", "arc_status"],
+        "animation": "none"
+      },
+      "multi_agent": {
+        "panels": [
+          "chat",
+          "glassbox_monitor",
+          "symprev_ring",
+          "codex_lane",
+          "arc_lane",
+          "teel_balancer"
+        ],
+        "animation": "slide_in_right",
+        "transition_ms": 280
+      }
+    }
+  },
+
   "tasks": [
     {
       "label": "Start All Services",
