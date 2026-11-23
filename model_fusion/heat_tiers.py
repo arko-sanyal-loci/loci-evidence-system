@@ -12,7 +12,7 @@ from enum import Enum, auto
 
 # ── Tier boundaries (must stay in sync with arc/core/heat.py) ────────────────
 
-TIER_HOT_BOUNDARY:        float = 0.80   # H ≥ 0.80 → HOT / VRAM
+TIER_HOT_BOUNDARY:        float = 0.7250  # H ≥ 0.7250 → HOT / VRAM (TRS v3.2: θ_HOT calibrated)
 TIER_MILD_BOUNDARY:       float = 0.35   # H ≥ 0.35 → MILD / DDR5
 VRAM_ADMISSION_THRESHOLD: float = 0.70   # crossing this promotes to VRAM
 
@@ -30,7 +30,7 @@ DRAFT_TOKENS_SOVEREIGN: int = 1
 
 class HeatTier(Enum):
     SOVEREIGN = auto()   # H → 1.0 (flag)  Arc-only sovereignty lock
-    HOT       = auto()   # H ≥ 0.80
+    HOT       = auto()   # H ≥ 0.7250 (TRS v3.2 calibrated: 6.94 items, 100% recall)
     MILD      = auto()   # H ≥ 0.35
     COLD      = auto()   # H <  0.35
 

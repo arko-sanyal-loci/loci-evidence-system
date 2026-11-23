@@ -148,11 +148,77 @@
     ]
   },
 
+  "symprev_streams": {
+    "_comment": "5-stream SymPrev embedding router (TRS v3.2-DEFENSIBLE)",
+    "module": "loci_symprev_streams.SymPrevRouter",
+    "enabled": true,
+    "streams": ["ISymPrev", "QSymPrev", "DSymPrev", "MSymPrev", "SSymPrev"],
+    "slp_weights": {
+      "ISymPrev": 0.30, "QSymPrev": 0.25, "DSymPrev": 0.20,
+      "MSymPrev": 0.15, "SSymPrev": 0.10
+    },
+    "mrl_dims": {
+      "ISymPrev": 768, "QSymPrev": 384, "DSymPrev": 768,
+      "MSymPrev": 128, "SSymPrev": 384
+    },
+    "hardware_routing": {
+      "ISymPrev": "arc_b70",   "QSymPrev": "rtx_5060ti",
+      "DSymPrev": "arc_b70",   "MSymPrev": "iphone_ane",
+      "SSymPrev": "rtx_5060ti"
+    },
+    "theta_hot": 0.7250,
+    "multihop_sigma": 0.3,
+    "emit_to_bus": true,
+    "note": "Fixes single-slice problem: nomic was used for one cosine only; now 5 parallel stream-specific embeddings with MRL dimension allocation and multi-hop tie-breaking (1,000x amplification)"
+  },
+
+  "ane_edge": {
+    "_comment": "iPhone ANE edge node for MSymPrev affective stream",
+    "enabled": true,
+    "endpoint": "http://192.168.1.100:7867/v1/embed",
+    "model": "nomic-embed-text-v1.5-coreml",
+    "dims": 128,
+    "timeout_s": 1.5,
+    "device": "iPhone 15 Pro (35 TOPS ANE, CoreML Float16)",
+    "fallback_chain": ["arc_b70", "rtx_5060ti", "cpu_stub"],
+    "coreml_export": "scripts/export_nomic_coreml.py",
+    "note": "MRL-128d slice of nomic-embed. Convert with: python scripts/export_nomic_coreml.py --dims 128"
+  },
+
+  "shader_map": {
+    "_comment": "Multi-X-axis person imagery → 5-channel SymPrev shader map",
+    "module": "loci_shader_map.ShaderMapGenerator",
+    "enabled": true,
+    "width": 64,
+    "height": 36,
+    "chatgpt_preset_integration": true,
+    "clip_fallback": "openai/clip-vit-base-patch32",
+    "publish_to_bus": true,
+    "note": "Consumes ChatGPT X-axis preset JSON or raw image paths. Publishes loci.shader_map.v1 events to SYMPREV_RING on bus."
+  },
+
+  "dynamic_relationships": {
+    "_comment": "Relationships as dynamic QSymPrev states (Masai Mara model)",
+    "module": "loci_dynamic_relationships.RelationshipStore",
+    "enabled": true,
+    "halflife_hours": 72,
+    "theta_hot": 0.7250,
+    "append_only": true,
+    "export_stream": "QSymPrev",
+    "note": "Relationships are versioned temporal states, never static edges. Active HOT nodes injected into QSymPrev at every prompt."
+  },
+
   "coordination_bus": {
     "socket": "/run/user/1000/loci-bus.sock",
     "ws_port": 8765,
     "stream_port": 8766,
-    "always_on": true
+    "always_on": true,
+    "rings": {
+      "audio":   {"maxlen": 512},
+      "video":   {"maxlen": 256},
+      "event":   {"maxlen": 2048},
+      "symprev": {"maxlen": 100, "note": "5-stream SymPrev scores + shader maps"}
+    }
   },
 
   "token_offset": {

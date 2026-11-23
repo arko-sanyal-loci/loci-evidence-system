@@ -176,8 +176,9 @@ def test_context_fusion_loci_context_wrapper():
 def test_context_fusion_cache_ttls():
     fuser = ContextFuser()
     result = fuser.fuse(_make_blocks())
+    from model_fusion.heat_tiers import TIER_HOT_BOUNDARY, TIER_MILD_BOUNDARY
     for cb in result.cache_blocks:
-        if cb.heat >= 0.80:
-            assert cb.ttl == "extended"
-        elif cb.heat >= 0.35:
-            assert cb.ttl == "ephemeral"
+        if cb.heat >= TIER_HOT_BOUNDARY:
+            assert cb.ttl == "extended", f"heat={cb.heat} should be extended"
+        elif cb.heat >= TIER_MILD_BOUNDARY:
+            assert cb.ttl == "ephemeral", f"heat={cb.heat} should be ephemeral"

@@ -59,9 +59,10 @@ log = logging.getLogger(__name__)
 
 # ── Ring buffers for audio / video packets ────────────────────────────────────
 
-AUDIO_RING: deque[dict[str, Any]] = deque(maxlen=512)
-VIDEO_RING: deque[dict[str, Any]] = deque(maxlen=256)
-EVENT_RING: deque[dict[str, Any]] = deque(maxlen=2048)
+AUDIO_RING:   deque[dict[str, Any]] = deque(maxlen=512)
+VIDEO_RING:   deque[dict[str, Any]] = deque(maxlen=256)
+EVENT_RING:   deque[dict[str, Any]] = deque(maxlen=2048)
+SYMPREV_RING: deque[dict[str, Any]] = deque(maxlen=100)   # 5-stream SymPrev scores + shader maps
 
 # Connected WebSocket clients
 _ws_clients: set[Any] = set()
@@ -84,6 +85,8 @@ def _ingest_packet(raw: str) -> dict[str, Any] | None:
             AUDIO_RING.append(pkt)
         elif kind == "video":
             VIDEO_RING.append(pkt)
+        elif kind == "symprev":
+            SYMPREV_RING.append(pkt)
         else:
             EVENT_RING.append(pkt)
         return pkt
@@ -144,9 +147,10 @@ async def _status_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWr
         "uptime_s": round(time.time() - _start_time, 1),
         "connected_clients": len(_ws_clients),
         "messages_total": _msg_count,
-        "audio_ring_size": len(AUDIO_RING),
-        "video_ring_size": len(VIDEO_RING),
-        "event_ring_size": len(EVENT_RING),
+        "audio_ring_size":   len(AUDIO_RING),
+        "video_ring_size":   len(VIDEO_RING),
+        "event_ring_size":   len(EVENT_RING),
+        "symprev_ring_size": len(SYMPREV_RING),
     }
     body = json.dumps(status, indent=2).encode()
     response = (
