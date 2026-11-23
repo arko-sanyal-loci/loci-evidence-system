@@ -69,13 +69,15 @@ import os
 import random
 import sys
 import time
+
+from loci_adaptive_theta import current_theta as _theta_hot, THETA_ANCHOR as THETA_HOT
 from dataclasses import dataclass, field, asdict
 from typing import Any, Optional
 
 log = logging.getLogger("loci.crossdomain")
 
 # ── TRS v3.2 constants ────────────────────────────────────────────────────────
-THETA_HOT    = 0.7250   # validated: 0.7250 > 0.700 on full-SLP F1 (0.870 vs 0.800, nomic v2 corpus)
+THETA_HOT    = THETA_HOT   # adaptive anchor; routing calls _theta_hot() for live value
 THETA_MILD   = 0.3500
 ALPHA_HOPE   = 0.050
 SIGMA_COND   = 0.3      # Gaussian conduction σ for 2-hop tiebreaker
@@ -291,7 +293,7 @@ def _two_hop_tiebreak(scores: list[float]) -> tuple[float, float, bool]:
 
 def _routing_tier(heat: float) -> tuple[str, str]:
     """Returns (tier_name, model_id)."""
-    if heat >= THETA_HOT:
+    if heat >= _theta_hot():
         return "HOT", "claude-sonnet-4-6"
     if heat >= THETA_MILD:
         return "MILD", "claude-haiku-4-5"

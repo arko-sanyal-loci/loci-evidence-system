@@ -73,7 +73,8 @@ from enum import Enum
 from typing import Optional
 
 
-THETA_HOT   = 0.7250   # validated: 0.7250 > 0.700 (full-SLP F1 0.870 vs 0.800, nomic v2 corpus)
+from loci_adaptive_theta import current_theta as _theta_hot, THETA_ANCHOR as THETA_HOT
+# THETA_HOT alias kept for display; routing code should call _theta_hot() for the live value
 THETA_MILD  = 0.35
 ALPHA_HOPE  = 0.050
 

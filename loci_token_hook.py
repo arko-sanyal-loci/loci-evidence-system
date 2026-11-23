@@ -12,7 +12,7 @@ Anthropic prompt caching (https://platform.claude.com/docs/prompt-caching):
   • Net saving once a prefix is cached: 90 tokens saved per 100 tokens re-read.
 
 LOCI heat tiers (from arc/core/cache_layer.py):
-  HOT  heat ≥ 0.7250 → extended TTL (1 hr)  — θ_HOT; 0.7250 > 0.700 on full-SLP F1
+  HOT  heat ≥ θ_HOT  → extended TTL (1 hr)  — θ_HOT is adaptive (see loci_adaptive_theta)
   MILD heat ≥ 0.350  → ephemeral TTL (5 min) — standard
   COLD heat <  0.350 → not cached
 
@@ -60,6 +60,8 @@ try:
     _HAS_HTTPX = True
 except ImportError:
     _HAS_HTTPX = False
+
+from loci_adaptive_theta import current_theta as _theta_hot
 
 # ── Pricing constants (USD per 1M tokens, Sonnet 4.5 / claude-sonnet-*) ──────
 _INPUT_COST_PER_M   = 3.00    # normal input
@@ -118,7 +120,7 @@ def _arc_heat(text: str, timeout: float = 1.5) -> float:
 # ── Cache breakpoint annotation ───────────────────────────────────────────────
 
 def _ttl_for_heat(heat: float) -> str:
-    if heat >= 0.7250:   # θ_HOT; 0.7250 > 0.700 on full-SLP (nomic v2 corpus, F1 0.870 vs 0.800)
+    if heat >= _theta_hot():   # adaptive θ_HOT (loci_adaptive_theta)
         return "extended"
     if heat >= 0.35:
         return "ephemeral"

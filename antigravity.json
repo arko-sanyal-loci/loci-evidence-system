@@ -166,10 +166,14 @@
       "DSymPrev": "arc_b70",   "MSymPrev": "iphone_ane",
       "SSymPrev": "rtx_5060ti"
     },
-    "theta_hot": 0.7250,
+    "theta_hot": "adaptive",
+    "theta_hot_anchor": 0.7250,
+    "theta_hot_floor": 0.640,
+    "theta_hot_ceil": 0.825,
+    "theta_hot_module": "loci_adaptive_theta.ADAPTIVE_THETA_HOT",
     "multihop_sigma": 0.3,
     "emit_to_bus": true,
-    "note": "Fixes single-slice problem: nomic was used for one cosine only; now 5 parallel stream-specific embeddings with MRL dimension allocation and multi-hop tie-breaking (1,000x amplification)"
+    "note": "Fixes single-slice problem: nomic was used for one cosine only; now 5 parallel stream-specific embeddings with MRL dimension allocation and multi-hop tie-breaking (1,000x amplification). θ_HOT is adaptive: ramps from FLOOR=0.640 at session start to ANCHOR=0.7250 over ~40 scored items, then tracks the live MILD–HOT valley (ceil 0.825)."
   },
 
   "ane_edge": {
@@ -202,10 +206,12 @@
     "module": "loci_dynamic_relationships.RelationshipStore",
     "enabled": true,
     "halflife_hours": 72,
-    "theta_hot": 0.7250,
+    "theta_hot": "adaptive",
+    "theta_hot_anchor": 0.7250,
+    "theta_hot_module": "loci_adaptive_theta.current_theta",
     "append_only": true,
     "export_stream": "QSymPrev",
-    "note": "Relationships are versioned temporal states, never static edges. Active HOT nodes injected into QSymPrev at every prompt."
+    "note": "Relationships are versioned temporal states, never static edges. Active HOT nodes injected into QSymPrev at every prompt. θ_HOT is adaptive (see loci_adaptive_theta)."
   },
 
   "coordination_bus": {

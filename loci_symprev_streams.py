@@ -58,9 +58,12 @@ from typing import Optional, Any
 
 log = logging.getLogger("loci.symprev_streams")
 
-# ── TRS v3.2-DEFENSIBLE constants ─────────────────────────────────────────────
+# ── Adaptive θ_HOT — calibrates to context maturity ──────────────────────────
+# Import the shared singleton; SymPrevRouter.score() calls .update() on each pair.
+# THETA_HOT_ANCHOR is kept for cold-start, logging, and legacy references.
+from loci_adaptive_theta import ADAPTIVE_THETA_HOT, THETA_ANCHOR as THETA_HOT_ANCHOR
 
-THETA_HOT    = 0.7250   # validated: 0.7250 > 0.700 (full-SLP F1 0.870 vs 0.800, nomic v2 corpus)
+THETA_HOT = THETA_HOT_ANCHOR  # module-level alias; use ADAPTIVE_THETA_HOT.theta for live value
 ALPHA_HOPE   = 0.050    # floor of H(t) ∈ (α, 1.0)
 
 # SLP score weights — cosine component (must sum to 1.0)
@@ -390,7 +393,7 @@ class SymPrevRouter:
         q_vecs, _    = self._embed_all(query)
         e_vecs, devs = self._embed_all(entity_text)
 
-        return StreamScores(
+        sc = StreamScores(
             isymprev     = _cosine(q_vecs["ISymPrev"], e_vecs["ISymPrev"]),
             qsymprev     = _cosine(q_vecs["QSymPrev"], e_vecs["QSymPrev"]),
             dsymprev     = _cosine(q_vecs["DSymPrev"], e_vecs["DSymPrev"]),
@@ -400,6 +403,9 @@ class SymPrevRouter:
             device_used  = devs,
             mrl_dims     = dict(STREAM_DIM),
         )
+        # Feed adaptive θ_HOT with the cosine floor score (SLP without heat/cross-session).
+        ADAPTIVE_THETA_HOT.update(sc.slp_score(heat=0.0))
+        return sc
 
     def rank_candidates(
         self,
@@ -423,7 +429,7 @@ class BluetoothContextEvent:
 
     BLE proximity events feed MSymPrev (affective) and ISymPrev (narrative)
     directly — no camera or manual annotation required.  RSSI → heat mapping
-    follows the LOCI Heat Law: θ_HOT=0.7250, α=0.050.
+    follows the LOCI Heat Law: θ_HOT=adaptive (see ADAPTIVE_THETA_HOT), α=0.050.
     """
     device_id:    str
     device_name:  str

@@ -60,8 +60,10 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 log = logging.getLogger(__name__)
 
-# ── TRS v3.2 boundary (must stay in sync with model_fusion/heat_tiers.py) ───
-THETA_HOT: float = 0.7250   # validated: 0.7250 > 0.700 (full-SLP F1 0.870 vs 0.800, nomic v2 corpus)
+# ── Adaptive θ_HOT — read live from shared singleton ────────────────────────
+from loci_adaptive_theta import current_theta as _theta_hot, THETA_ANCHOR as THETA_HOT
+# THETA_HOT (= ANCHOR 0.7250) is used only for the static INFERENCE_LANES display;
+# select_primary_lane() calls _theta_hot() for the live adaptive value.
 
 # ── CARD archetypes that trigger MULTI_AGENT mode ───────────────────────────
 MULTI_AGENT_ARCHETYPES = frozenset({
@@ -138,7 +140,7 @@ def select_primary_lane(heat: float, query_type: str = "general") -> InferenceLa
     Claude API for COLD oversight. Mirrors InferenceRouter.route() from
     model_fusion/inference_router.py without the import-time dependency.
     """
-    if heat >= THETA_HOT:
+    if heat >= _theta_hot():
         return next(l for l in INFERENCE_LANES if l.lane_id == "ARC_B70")
     if heat >= 0.35 and query_type in {"code", "completion", "diff"}:
         return next(l for l in INFERENCE_LANES if l.lane_id == "CODEX_API")
@@ -448,7 +450,7 @@ STREAMING_CONFIG_PATCH: Dict[str, Any] = {
         },
         "arc_hub": {
             "lane_id":   "LOCAL_ARC_PRO_B70",
-            "heat_min":  THETA_HOT,
+            "heat_min":  _theta_hot(),   # live adaptive value
             "role":      "primary_inference_and_embedding_hub",
         },
         "layout_modes": {

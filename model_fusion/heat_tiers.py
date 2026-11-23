@@ -12,7 +12,8 @@ from enum import Enum, auto
 
 # ── Tier boundaries (must stay in sync with arc/core/heat.py) ────────────────
 
-TIER_HOT_BOUNDARY:        float = 0.7250  # H ≥ 0.7250 → HOT / VRAM; 0.7250 > 0.700 on full-SLP F1
+from loci_adaptive_theta import current_theta as _theta_hot, THETA_ANCHOR
+TIER_HOT_BOUNDARY: float = THETA_ANCHOR  # static anchor; call _theta_hot() for live adaptive value
 TIER_MILD_BOUNDARY:       float = 0.35   # H ≥ 0.35 → MILD / DDR5
 VRAM_ADMISSION_THRESHOLD: float = 0.70   # crossing this promotes to VRAM
 
@@ -38,7 +39,7 @@ class HeatTier(Enum):
 def classify(heat: float, *, sovereign_flag: bool = False) -> HeatTier:
     if sovereign_flag or heat >= 0.9999:
         return HeatTier.SOVEREIGN
-    if heat >= TIER_HOT_BOUNDARY:
+    if heat >= _theta_hot():
         return HeatTier.HOT
     if heat >= TIER_MILD_BOUNDARY:
         return HeatTier.MILD
