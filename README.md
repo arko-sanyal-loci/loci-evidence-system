@@ -7,6 +7,10 @@ calendar exports, operating-system event logs, credentials, or model weights.
 
 ## Start here
 
+`ARC-MEMORY-BOOT.md` is the first-read contract for Arc and all local agents.
+The `arc-memory-boot.service` records a non-secret readiness manifest after
+Arc starts; it does not decrypt or load private snapshots.
+
 - [Workspace guide](WORKSPACE-GUIDE.md): project map and day-to-day commands.
 - [Install guide](docs/INSTALL.md): dependencies and local setup.
 - [System architecture](docs/ARCHITECTURE.md): local data flow and trust boundaries.

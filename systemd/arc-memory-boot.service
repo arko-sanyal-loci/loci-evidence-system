@@ -1,0 +1,22 @@
+[Unit]
+Description=Record Arc and LOCI memory boot readiness
+Wants=arc-interface.service arc-memory-sync.service arc-telemetry-push.timer
+After=arc-interface.service arc-memory-sync.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/src/loci-workstation
+ExecStart=/usr/bin/python3 %h/src/loci-workstation/arc_memory_boot.py
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=%h/src/loci-workstation/ARC-MEMORY-BOOT.md %h/src/arko-sanyal-loci/arc-canonical %h/src/arko-sanyal-loci/loci-memory-engine %h/src/arko-sanyal-loci/arc-private-memory %h/.config/loci/arc-memory-recipient %h/.config/loci/workstation-backup.env
+ReadWritePaths=%h/.local/state/loci-session
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=default.target
