@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LOCI Cache Benchmark — Claude Sonnet 4.6</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --hot: #ff6b35; --mild: #ffd166; --cold: #06d6a0;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.6 'JetBrains Mono', monospace;
+          padding: 24px; }
+  h1 { font-size: 20px; color: var(--accent); margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+           gap: 16px; margin-bottom: 24px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+          padding: 16px; }
+  .kpi .label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+                 letter-spacing: 0.08em; margin-bottom: 4px; }
+  .kpi .value { font-size: 28px; font-weight: 700; }
+  .kpi .sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .hot  { color: var(--hot); }
+  .mild { color: var(--mild); }
+  .cold { color: var(--cold); }
+  .blue { color: var(--accent); }
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+              padding: 16px; margin-bottom: 20px; }
+  .section h2 { font-size: 14px; color: var(--accent); margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: var(--muted); border-bottom: 1px solid var(--border);
+        padding: 6px 8px; }
+  td { padding: 5px 8px; border-bottom: 1px solid #21262d; }
+  .bar-wrap { position: relative; background: #21262d; border-radius: 4px;
+               height: 8px; width: 100%; }
+  .bar { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+  canvas { display: block; width: 100%; }
+  .tier-row td:nth-child(2) { color: var(--hot); }
+  .tier-row td:nth-child(3) { color: var(--mild); }
+  .tier-row td:nth-child(4) { color: var(--cold); }
+</style>
+</head>
+<body>
+<h1>LOCI Cache Benchmark · Anti-gravity IDE</h1>
+<p class="subtitle">Claude Sonnet 4.6 token carry &amp; hot teacher cache · 20-turn IDE session · 2026-11-23 03:38 UTC</p>
+
+<div class="grid">
+  <div class="kpi">
+    <div class="label">Avg carry ratio</div>
+    <div class="value hot">61%</div>
+    <div class="sub">tokens served from cache / total input</div>
+  </div>
+  <div class="kpi">
+    <div class="label">USD saved vs no-cache</div>
+    <div class="value blue">$0.6626</div>
+    <div class="sub">45% reduction over 20 turns</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Total (Claude + LOCI)</div>
+    <div class="value">$0.8206</div>
+    <div class="sub">vs $1.4832 no-cache · $0.8820 GPT-4o</div>
+  </div>
+  <div class="kpi">
+    <div class="label">HOT cache (extended)</div>
+    <div class="value hot">12,400</div>
+    <div class="sub">tokens in 1-hr cache (BP1+BP2+BP3-HOT)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">MILD cache (ephemeral)</div>
+    <div class="value mild">1,200</div>
+    <div class="sub">tokens in 5-min cache (BP3-MILD)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Context window</div>
+    <div class="value blue">200K</div>
+    <div class="sub">Claude Sonnet 4.6 max context</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Carry ratio per turn (% of input tokens from cache)</h2>
+  <canvas id="carryChart" height="80"></canvas>
+</div>
+
+<div class="section">
+  <h2>Cost breakdown per turn (milli-USD)</h2>
+  <canvas id="costChart" height="100"></canvas>
+</div>
+
+<div class="section">
+  <h2>Cache layout — 4 breakpoints (LOCI Heat Law)</h2>
+  <table>
+    <thead><tr>
+      <th>Breakpoint</th><th>Tier</th><th>Tokens</th><th>TTL</th>
+      <th>Cache $/M write</th><th>Cache $/M read</th><th>Savings/turn</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td>BP1 — Tool schemas</td>
+        <td class="hot">HOT</td>
+        <td>8,000</td>
+        <td>60 min (extended)</td>
+        <td>$3.75</td><td>$0.30</td>
+        <td>$0.0216</td>
+      </tr>
+      <tr>
+        <td>BP2 — System prompt</td>
+        <td class="hot">HOT</td>
+        <td>3,200</td>
+        <td>60 min (extended)</td>
+        <td>$3.75</td><td>$0.30</td>
+        <td>$0.0086</td>
+      </tr>
+      <tr>
+        <td>BP3 — loci_context HOT</td>
+        <td class="hot">HOT</td>
+        <td>1,200</td>
+        <td>60 min (extended)</td>
+        <td>$3.75</td><td>$0.30</td>
+        <td>$0.0032</td>
+      </tr>
+      <tr>
+        <td>BP3 — loci_context MILD</td>
+        <td class="mild">MILD</td>
+        <td>1,200</td>
+        <td>5 min (ephemeral)</td>
+        <td>$3.75</td><td>$0.30</td>
+        <td>$0.0032</td>
+      </tr>
+      <tr>
+        <td>BP4 — User turn</td>
+        <td class="cold">COLD</td>
+        <td>~300+history</td>
+        <td>not cached</td>
+        <td>—</td><td>—</td><td>—</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Model comparison — 20-turn session total (USD)</h2>
+  <table>
+    <thead><tr>
+      <th>Model</th><th>Input</th><th>Cache read</th><th>Cache write</th>
+      <th>Output</th><th>Total</th><th>vs Claude</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td>Claude Sonnet 4.6 + LOCI cache</td>
+        <td>$0.4272</td>
+        <td>$0.0754</td>
+        <td>$0.0780</td>
+        <td>$0.2400</td>
+        <td class="blue"><strong>$0.8206</strong></td>
+        <td>baseline</td>
+      </tr>
+      <tr>
+        <td>Claude Sonnet 4.6 (no cache)</td>
+        <td>$1.2432</td>
+        <td>—</td><td>—</td>
+        <td>$0.2400</td>
+        <td class="hot"><strong>$1.4832</strong></td>
+        <td class="hot">+81%</td>
+      </tr>
+      <tr>
+        <td>GPT-4o (OpenAI prompt cache)</td>
+        <td>$0.3560</td>
+        <td>$0.3140</td>
+        <td>—</td>
+        <td>$0.1600</td>
+        <td class="mild"><strong>$0.8820</strong></td>
+        <td class="mild">+7%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+
+<div class="section">
+  <h2>What "how much do I carry" means</h2>
+  <p style="color:var(--muted); font-size:12px; line-height:1.8">
+    <strong style="color:var(--text)">Token carry</strong> = fraction of per-turn input tokens served from Claude's prompt cache.<br>
+    In this 20-turn IDE session: BP1 tools (8,000 tok) + BP2 system (3,200 tok) +
+    BP3-HOT loci_context (1,200 tok) = <strong style="color:var(--hot)">12,400 tokens</strong>
+    stay in extended (1-hr) cache — the "hot teachers" (Arc memory + Codex code blocks with heat ≥ 0.80).<br><br>
+    By turn 10, ~61% of every Claude API call's input tokens are served at $0.30/M instead of $3.00/M.<br>
+    That's a <strong style="color:var(--blue)">45% cost reduction</strong> on input tokens for the fixed context.
+  </p>
+</div>
+
+<script>
+const W = (c) => c.getContext('2d').canvas.offsetWidth;
+
+function sparkline(id, data, color) {
+  const canvas = document.getElementById(id);
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  const w = canvas.width, h = canvas.height;
+  const max = Math.max(...data), min = Math.min(...data);
+  const range = max - min || 1;
+  ctx.clearRect(0, 0, w, h);
+  // grid
+  ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+  [0, 25, 50, 75, 100].forEach(v => {
+    const y = h - ((v - min) / range) * (h - 20) - 10;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px monospace';
+    ctx.fillText(v + '%', 2, y - 2);
+  });
+  // line
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 20) - 10;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // dots
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 20) - 10;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8b949e'; ctx.font = '9px monospace';
+    ctx.fillText(v.toFixed(0), x - 8, y - 6);
+  });
+}
+
+function stackedBar(id, labels, datasets) {
+  const canvas = document.getElementById(id);
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  const w = canvas.width, h = canvas.height;
+  const pad = 30, bw = (w - pad) / labels.length - 2;
+  // find max total
+  const totals = labels.map((_, i) => datasets.reduce((s, d) => s + d.data[i], 0));
+  const maxT = Math.max(...totals);
+  datasets.forEach(ds => {
+    ds._base = new Array(labels.length).fill(0);
+  });
+  // accumulate bases
+  for (let di = datasets.length - 1; di >= 0; di--) {
+    if (di < datasets.length - 1) {
+      datasets[di]._base = datasets[di+1]._base.map((b, i) => b + datasets[di+1].data[i]);
+    }
+  }
+  ctx.clearRect(0, 0, w, h);
+  datasets.forEach(ds => {
+    ctx.fillStyle = ds.color;
+    labels.forEach((_, i) => {
+      const x  = pad + i * ((w - pad) / labels.length);
+      const bh = (ds.data[i] / maxT) * (h - 20);
+      const by = h - ((ds._base[i] / maxT) * (h - 20)) - bh;
+      ctx.fillRect(x, by, bw, bh);
+    });
+  });
+  // x labels
+  ctx.fillStyle = '#8b949e'; ctx.font = '9px monospace';
+  labels.forEach((l, i) => {
+    const x = pad + i * ((w - pad) / labels.length) + bw / 2 - 4;
+    ctx.fillText(l, x, h - 2);
+  });
+}
+
+sparkline('carryChart', [0.0, 90.7, 84.5, 72.1, 74.3, 70.1, 60.5, 63.0, 59.9, 54.6, 59.9, 59.9, 54.6, 59.9, 59.9, 54.6, 59.9, 59.9, 54.6, 59.9], '#ff6b35');
+stackedBar('costChart',
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  [
+    { color: '#ff6b35', data: [0.9, 4.2, 7.5, 10.8, 14.1, 17.4, 20.7, 24.0, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3, 27.3],  label: 'fresh' },
+    { color: '#06d6a0', data: [0.0, 4.08, 4.08, 3.72, 4.08, 4.08, 3.72, 4.08, 4.08, 3.72, 4.08, 4.08, 3.72, 4.08, 4.08, 3.72, 4.08, 4.08, 3.72, 4.08],   label: 'cache_read' },
+    { color: '#ffd166', data: [51.0, 0.0, 0.0, 4.5, 0.0, 0.0, 4.5, 0.0, 0.0, 4.5, 0.0, 0.0, 4.5, 0.0, 0.0, 4.5, 0.0, 0.0, 4.5, 0.0],  label: 'cache_write' },
+  ]
+);
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+{
+  "_comment": "Anti-gravity IDE — 5-agent edition (Arc · Codex · Copilot · Claude · local-metal) + model fusion",
+  "_version": "2.2",
+
+  "workspace": {
+    "name": "Anti-gravity · 5-Agent",
+    "root": ".",
+    "icon": "🪐",
+    "theme": "dark",
+    "org": "billo-tech"
+  },
+
+  "agents": {
+    "arc": {
+      "role": "primary-local",
+      "description": "Arc — local reasoning, LOCI memory, 70B weights on Arc B70 VRAM, always sovereign",
+      "endpoint": "http://localhost:7860",
+      "mcp_endpoint": "http://localhost:7860/mcp",
+      "tools": ["arc_chat", "arc_memory_search", "arc_status", "arc_token_offset", "arc_heat"],
+      "auto_connect": true,
+      "keepalive_ms": 10000,
+      "model": "arc-70b-local",
+      "vram_lane": 1,
+      "heat_threshold": 0.70
+    },
+    "codex": {
+      "role": "code",
+      "description": "Codex — OpenAI Responses API, code generation, Codex-mini by default",
+      "api_base": "https://api.openai.com/v1",
+      "model": "codex-mini-latest",
+      "tools": ["code_interpreter", "web_search"],
+      "auto_connect": true
+    },
+    "copilot": {
+      "role": "completion",
+      "description": "GitHub Copilot — LSP inline completions, file-context aware",
+      "lsp_command": "copilot-language-server",
+      "auto_connect": true,
+      "trigger": "inline",
+      "scope": ["code", "completion"]
+    },
+    "claude": {
+      "role": "orchestrator",
+      "description": "Claude Code — session orchestrator, reasoning, LOCI savings hook active",
+      "model": "claude-sonnet-4-6",
+      "mcp_bus": "http://localhost:8765/mcp",
+      "token_hook": "loci_token_hook.wrap_anthropic_client",
+      "auto_connect": true
+    },
+    "local_metal": {
+      "role": "speculative-drafter",
+      "description": "Local metal — vLLM on RTX 5060 Ti (fast lane), speculative drafter for Arc",
+      "endpoint": "http://localhost:8000/v1",
+      "model": "meta-llama/Llama-3.1-8B-Instruct",
+      "vram_lane": 0,
+      "draft_tokens": 4,
+      "auto_connect": true
+    }
+  },
+
+  "model_fusion": {
+    "enabled": true,
+    "package": "model_fusion",
+    "layers": {
+      "distillation": {
+        "module": "model_fusion.distillation.FusionDistiller",
+        "teachers": ["arc", "claude", "codex", "local_metal"],
+        "conduction_sigma": 0.3,
+        "note": "HOT teacher outputs drive KD; COLD filtered; SAD-LoRA spectral alignment"
+      },
+      "inference_router": {
+        "module": "model_fusion.inference_router.InferenceRouter",
+        "heat_tiers": {
+          "SOVEREIGN": {"primary": "arc-70b-local",   "drafter": null,              "k": 1,  "lora_r": 16},
+          "HOT":       {"primary": "arc-70b-local",   "drafter": "rtx-5060ti-draft","k": 8,  "lora_r": 16},
+          "MILD":      {"primary": "codex-api",        "drafter": "arc-small-local", "k": 4,  "lora_r": 8},
+          "COLD":      {"primary": "claude-api",       "drafter": null,              "k": 2,  "lora_r": 1}
+        }
+      },
+      "context_fusion": {
+        "module": "model_fusion.context_fusion.ContextFuser",
+        "max_tokens": 4096,
+        "temperature": 0.3,
+        "cache_ttl": {
+          "HOT":  "extended",
+          "MILD": "ephemeral",
+          "COLD": "drop"
+        },
+        "note": "Heat-weighted softmax merge; <loci_context> wrapper triggers BP3 cache breakpoint"
+      }
+    }
+  },
+
+  "layout": {
+    "panels": [
+      {
+        "id": "arc-center",
+        "agent": "arc",
+        "type": "chat",
+        "title": "Arc  ·  Local sovereign",
+        "position": "center",
+        "default": true,
+        "width_pct": 40
+      },
+      {
+        "id": "claude-left",
+        "agent": "claude",
+        "type": "chat",
+        "title": "Claude Code  ·  Orchestrator",
+        "position": "left",
+        "width_pct": 20
+      },
+      {
+        "id": "codex-right",
+        "agent": "codex",
+        "type": "code",
+        "title": "Codex",
+        "position": "right",
+        "width_pct": 20
+      },
+      {
+        "id": "copilot-right-lower",
+        "agent": "copilot",
+        "type": "completion",
+        "title": "Copilot  ·  Inline",
+        "position": "right",
+        "width_pct": 20,
+        "inline": true
+      },
+      {
+        "id": "fusion-status",
+        "type": "iframe",
+        "title": "Model Fusion  ·  Heat Tiers",
+        "url": "http://localhost:9099/fusion-status",
+        "position": "bottom",
+        "height": 160,
+        "refresh_ms": 3000
+      },
+      {
+        "id": "bus-status",
+        "type": "iframe",
+        "title": "Bus Stream  ·  Always-On",
+        "url": "http://localhost:8766/status",
+        "position": "bottom",
+        "height": 100,
+        "refresh_ms": 5000
+      }
+    ]
+  },
+
+  "symprev_streams": {
+    "_comment": "5-stream SymPrev embedding router (TRS v3.2-DEFENSIBLE)",
+    "module": "loci_symprev_streams.SymPrevRouter",
+    "enabled": true,
+    "streams": ["ISymPrev", "QSymPrev", "DSymPrev", "MSymPrev", "SSymPrev"],
+    "slp_weights": {
+      "ISymPrev": 0.30, "QSymPrev": 0.25, "DSymPrev": 0.20,
+      "MSymPrev": 0.15, "SSymPrev": 0.10
+    },
+    "mrl_dims": {
+      "ISymPrev": 768, "QSymPrev": 384, "DSymPrev": 768,
+      "MSymPrev": 128, "SSymPrev": 384
+    },
+    "hardware_routing": {
+      "ISymPrev": "arc_b70",   "QSymPrev": "rtx_5060ti",
+      "DSymPrev": "arc_b70",   "MSymPrev": "iphone_ane",
+      "SSymPrev": "rtx_5060ti"
+    },
+    "theta_hot": "adaptive",
+    "theta_hot_anchor": 0.7250,
+    "theta_hot_floor": 0.640,
+    "theta_hot_ceil": 0.825,
+    "theta_hot_module": "loci_adaptive_theta.ADAPTIVE_THETA_HOT",
+    "multihop_sigma": 0.3,
+    "emit_to_bus": true,
+    "note": "Fixes single-slice problem: nomic was used for one cosine only; now 5 parallel stream-specific embeddings with MRL dimension allocation and multi-hop tie-breaking (1,000x amplification). θ_HOT is adaptive: ramps from FLOOR=0.640 at session start to ANCHOR=0.7250 over ~40 scored items, then tracks the live MILD–HOT valley (ceil 0.825)."
+  },
+
+  "ane_edge": {
+    "_comment": "iPhone ANE edge node for MSymPrev affective stream",
+    "enabled": true,
+    "endpoint": "http://192.168.1.100:7867/v1/embed",
+    "model": "nomic-embed-text-v1.5-coreml",
+    "dims": 128,
+    "timeout_s": 1.5,
+    "device": "iPhone 15 Pro (35 TOPS ANE, CoreML Float16)",
+    "fallback_chain": ["arc_b70", "rtx_5060ti", "cpu_stub"],
+    "coreml_export": "scripts/export_nomic_coreml.py",
+    "note": "MRL-128d slice of nomic-embed. Convert with: python scripts/export_nomic_coreml.py --dims 128"
+  },
+
+  "shader_map": {
+    "_comment": "Multi-X-axis person imagery → 5-channel SymPrev shader map",
+    "module": "loci_shader_map.ShaderMapGenerator",
+    "enabled": true,
+    "width": 64,
+    "height": 36,
+    "chatgpt_preset_integration": true,
+    "clip_fallback": "openai/clip-vit-base-patch32",
+    "publish_to_bus": true,
+    "note": "Consumes ChatGPT X-axis preset JSON or raw image paths. Publishes loci.shader_map.v1 events to SYMPREV_RING on bus."
+  },
+
+  "dynamic_relationships": {
+    "_comment": "Relationships as dynamic QSymPrev states (Masai Mara model)",
+    "module": "loci_dynamic_relationships.RelationshipStore",
+    "enabled": true,
+    "halflife_hours": 72,
+    "theta_hot": "adaptive",
+    "theta_hot_anchor": 0.7250,
+    "theta_hot_module": "loci_adaptive_theta.current_theta",
+    "append_only": true,
+    "export_stream": "QSymPrev",
+    "note": "Relationships are versioned temporal states, never static edges. Active HOT nodes injected into QSymPrev at every prompt. θ_HOT is adaptive (see loci_adaptive_theta)."
+  },
+
+  "coordination_bus": {
+    "socket": "/run/user/1000/loci-bus.sock",
+    "ws_port": 8765,
+    "stream_port": 8766,
+    "always_on": true,
+    "rings": {
+      "audio":   {"maxlen": 512},
+      "video":   {"maxlen": 256},
+      "event":   {"maxlen": 2048},
+      "symprev": {"maxlen": 100, "note": "5-stream SymPrev scores + shader maps"}
+    }
+  },
+
+  "token_offset": {
+    "service_port": 9099,
+    "primary_device": 1,
+    "fallback_device": 0,
+    "fault_tolerant": true
+  },
+
+  "streaming_mode": {
+    "_comment": "Fluid streaming: tokens render live (ChatGPT-style SSE), layout morphs mid-stream when CARD archetype demands multi-agent IDE",
+    "enabled": true,
+    "style": "fluid",
+    "router": "loci_streaming_router.FluidStreamingRouter",
+    "sse_events": ["text_delta", "mode.transition", "glassbox.monitor"],
+    "transition_trigger": {
+      "source":     "card_archetype",
+      "archetypes": ["multi_session_reasoning", "speculative_stream_synthesis"],
+      "timing":     "pre_first_token"
+    },
+    "arc_hub": {
+      "lane_id":  "LOCAL_ARC_PRO_B70",
+      "heat_min": 0.7250,
+      "role":     "primary_inference_and_embedding_hub"
+    },
+    "layout_modes": {
+      "standard": {
+        "panels": ["chat", "arc_status"],
+        "animation": "none"
+      },
+      "multi_agent": {
+        "panels": [
+          "chat",
+          "glassbox_monitor",
+          "symprev_ring",
+          "codex_lane",
+          "arc_lane",
+          "teel_balancer"
+        ],
+        "animation": "slide_in_right",
+        "transition_ms": 280
+      }
+    }
+  },
+
+  "tasks": [
+    {
+      "label": "Start All Services",
+      "type": "shell",
+      "command": "bash scripts/start_all.sh",
+      "group": {"kind": "build", "isDefault": true}
+    },
+    {
+      "label": "Start Arc vLLM (70B on Arc B70)",
+      "type": "shell",
+      "command": "bash scripts/start_arc_vllm.sh",
+      "group": "build"
+    },
+    {
+      "label": "Start local-metal drafter (RTX)",
+      "type": "shell",
+      "command": "bash scripts/start_rtx_drafter.sh",
+      "group": "build"
+    },
+    {
+      "label": "Fusion smoke test",
+      "type": "shell",
+      "command": "python3 -m pytest model_fusion/tests/ -v",
+      "group": "test"
+    }
+  ],
+
+  "keybindings": [
+    {"key": "ctrl+shift+a", "command": "arc.focusChat"},
+    {"key": "ctrl+shift+c", "command": "codex.focusCode"},
+    {"key": "ctrl+shift+l", "command": "claude.focusChat"},
+    {"key": "ctrl+shift+f", "command": "fusion.showHeatMap"},
+    {"key": "ctrl+shift+b", "command": "bus.showStatus"}
+  ]
+}

@@ -1,0 +1,51 @@
+[Unit]
+Description=LOCI coordination bus — Garena-style always-on audio/video stream
+Documentation=https://github.com/arko-sanyal-loci/loci-coordination-bus
+# Socket keeps the port bound; this service may restart without clients noticing
+Requires=loci-bus-stream.socket
+After=loci-bus-stream.socket network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WorkingDirectory=%h/src/loci-workstation
+
+# The bus server receives the already-bound socket fd via systemd socket activation
+ExecStart=%h/src/loci-workstation/.venv/bin/python \
+    -m loci_bus_stream \
+    --systemd-socket \
+    --ws-port 8765 \
+    --stream-port 8766 \
+    --audio-always-on \
+    --video-always-on
+
+# Always restart — the socket stays bound so clients never lose the port
+Restart=always
+RestartSec=1
+# Cap restart rate: at most 10 restarts in 30 s before systemd gives up
+StartLimitBurst=10
+StartLimitIntervalSec=30
+
+# Watchdog: service must ping sd_notify("WATCHDOG=1") every 15 s or be killed+restarted
+WatchdogSec=15
+# Give the process 5 s to shut down gracefully before SIGKILL
+TimeoutStopSec=5
+
+# Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/loci-bus
+UMask=0077
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+RestrictSUIDSGID=yes
+
+# Log to journal under identifier loci-bus
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=loci-bus-stream
+
+[Install]
+WantedBy=default.target

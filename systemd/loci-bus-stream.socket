@@ -1,0 +1,22 @@
+[Unit]
+Description=LOCI coordination bus — always-on socket
+Documentation=https://github.com/arko-sanyal-loci/loci-coordination-bus
+
+[Socket]
+# TCP listener on loopback — stays bound even when the service restarts.
+# Audio/video packet clients reconnect to this socket without noticing
+# the service cycle.
+ListenStream=127.0.0.1:8765
+ListenStream=127.0.0.1:8766
+Accept=false
+NoDelay=true
+ReusePort=true
+SocketMode=0600
+# Keep the socket alive so OS buffers frames during restart
+KeepAlive=true
+KeepAliveTimeSec=5
+KeepAliveIntervalSec=2
+KeepAliveProbes=3
+
+[Install]
+WantedBy=sockets.target
