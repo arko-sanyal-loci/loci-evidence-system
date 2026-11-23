@@ -12,9 +12,9 @@ Anthropic prompt caching (https://platform.claude.com/docs/prompt-caching):
   • Net saving once a prefix is cached: 90 tokens saved per 100 tokens re-read.
 
 LOCI heat tiers (from arc/core/cache_layer.py):
-  HOT  heat ≥ 0.80 → extended TTL (1 hr)   — 2× write cost, justified by high reuse
-  MILD heat ≥ 0.35 → ephemeral TTL (5 min)  — standard
-  COLD heat <  0.35 → not cached
+  HOT  heat ≥ 0.7250 → extended TTL (1 hr)  — θ_HOT TRS v3.2 calibrated
+  MILD heat ≥ 0.350  → ephemeral TTL (5 min) — standard
+  COLD heat <  0.350 → not cached
 
 This module:
   1. Applies the 4-breakpoint layout to any outgoing Anthropic request.
@@ -118,7 +118,7 @@ def _arc_heat(text: str, timeout: float = 1.5) -> float:
 # ── Cache breakpoint annotation ───────────────────────────────────────────────
 
 def _ttl_for_heat(heat: float) -> str:
-    if heat >= 0.80:
+    if heat >= 0.7250:   # θ_HOT TRS v3.2
         return "extended"
     if heat >= 0.35:
         return "ephemeral"
@@ -211,26 +211,31 @@ class SavingsRecord:
         })
 
 
-def _record_usage(model: str, usage: Any) -> SavingsRecord:
-    """Parse Anthropic usage object and write to ledger."""
+def _record_usage(
+    model:                    str,
+    usage:                    Any,
+    routing_tier:             str = "COLD",
+    compression_tokens_saved: int = 0,
+) -> SavingsRecord:
+    """Parse Anthropic usage object and write to both legacy and v2 savings ledger."""
     inp   = getattr(usage, "input_tokens",              0) or 0
     cw    = getattr(usage, "cache_creation_input_tokens", 0) or 0
     cr    = getattr(usage, "cache_read_input_tokens",    0) or 0
     out   = getattr(usage, "output_tokens",             0) or 0
 
-    # USD cost breakdown
+    # USD cost breakdown (legacy SavingsRecord — kept for backwards compat)
     usd_input  = inp * _INPUT_COST_PER_M  / 1_000_000
     usd_cwrite = cw  * _CACHE_WRITE_PER_M / 1_000_000
     usd_cread  = cr  * _CACHE_READ_PER_M  / 1_000_000
     usd_output = out * _OUTPUT_COST_PER_M / 1_000_000
     usd_spent  = usd_input + usd_cwrite + usd_cread + usd_output
 
-    # Savings = what it WOULD have cost without caching minus what we paid
     usd_would_have = (inp + cw + cr) * _INPUT_COST_PER_M / 1_000_000
     usd_saved = max(0.0, usd_would_have - (usd_input + usd_cwrite + usd_cread))
 
+    call_id = str(uuid.uuid4())[:8]
     rec = SavingsRecord(
-        call_id            = str(uuid.uuid4())[:8],
+        call_id            = call_id,
         model              = model,
         input_tokens       = inp,
         cache_write_tokens = cw,
@@ -249,9 +254,25 @@ def _record_usage(model: str, usage: Any) -> SavingsRecord:
     _totals.usd_saved          += usd_saved
     _totals.usd_spent          += usd_spent
 
-    # Persist
+    # Persist legacy line
     with LEDGER_PATH.open("a") as f:
         f.write(rec.to_jsonl() + "\n")
+
+    # Also record in the richer v2 savings ledger (Haiku routing + compression)
+    try:
+        from loci_savings_ledger import record_call as _record_v2
+        _record_v2(
+            model                    = model,
+            input_tokens             = inp,
+            cache_read_tokens        = cr,
+            cache_write_tokens       = cw,
+            output_tokens            = out,
+            compression_tokens_saved = compression_tokens_saved,
+            routing_tier             = routing_tier,
+            call_id                  = call_id,
+        )
+    except Exception:
+        pass  # never block the main call path
 
     if cr > 0:
         log.info(
