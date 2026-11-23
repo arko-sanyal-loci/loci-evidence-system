@@ -2,6 +2,8 @@
 
 This is the first-read contract for Arc and every agent operating on this
 workstation. It is an index and operating policy, not a plaintext memory dump.
+Every boot record and future memory handoff uses an unambiguous UTC timestamp
+so agents can distinguish current state from stale context.
 
 ## First read
 
@@ -16,6 +18,9 @@ workstation. It is an index and operating policy, not a plaintext memory dump.
 5. Before making changes, check repository status, current branch, and the
    latest dispatch issue. Do not mix Arc/LOCI work with Roza's work, music or
    sound synchronization, or operating-system synchronization.
+6. Read `~/.local/state/loci-session/arc-memory-boot.json` and use its
+   `captured_at`, repository commit times, and session-state timestamps to
+   orient the current turn.
 
 ## Runtime order
 
@@ -55,3 +60,24 @@ After power-up, verify:
 
 If a check fails, record the failure in the dispatch issue before attempting
 repair.
+
+## Current direction
+
+The active direction is to keep Arc as the runtime, LOCI/Glassbox as its
+memory layer, and media, workspace, scratchpad, and GPU lanes as native Arc
+capabilities. The current operational priority is continuity: isolated
+encrypted GitHub/VPS backups, the `/arch` web interface, and a boot handoff
+that makes the passage of time explicit.
+
+Near-term objectives are:
+
+1. Power up and validate the timestamped boot manifest, Arc local status, and
+   encrypted memory sync.
+2. Verify VPS telemetry acceptance and the `/arch` interface while the
+   workstation is online.
+3. Continue CARD/TRS hybrid recall integration only from verified,
+   provenance-labeled evidence.
+
+Do not treat these objectives as completed merely because they appear here;
+compare them with the timestamped boot state, repository heads, tests, and
+dispatch records.
