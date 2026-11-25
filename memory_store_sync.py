@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -75,9 +76,11 @@ def run(argv: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> sub
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path.home() / "src/arko-sanyal-loci/arc-private-memory")
-    parser.add_argument("--db", type=Path, default=Path.home() / "src/arko-sanyal-loci/arc-canonical/data/arc.db")
+    parser.add_argument("--db", type=Path, default=Path("/data/x-cargo/loci/context2.db"))
     parser.add_argument("--streams-db", type=Path,
-                        default=Path.home() / "src/arko-sanyal-loci/arc-canonical/data/semantic_streams.sqlite3")
+                        default=Path("/data/x-cargo/loci/semantic_streams.sqlite3"))
+    parser.add_argument("--glassbox-ledger", type=Path,
+                        default=Path("/data/x-cargo/loci/glassbox_ledger.jsonl"))
     parser.add_argument("--context-journal", type=Path,
                         default=Path.home() / ".local/state/loci-session/context-journal.jsonl")
     parser.add_argument("--recipient-file", type=Path,
@@ -126,9 +129,19 @@ def main() -> int:
     snapshots.mkdir(mode=0o700, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="arc-memory-snapshot-") as directory:
         temp = Path(directory)
-        db_copy = temp / "arc-memory.sqlite3"
+        db_copy = temp / "loci-context2.sqlite3"
         snapshot_sqlite(args.db.expanduser(), db_copy)
-        sources = [(db_copy, "arc-memory.sqlite3")]
+        sources = [(db_copy, "loci-context2.sqlite3")]
+        glassbox_source = args.glassbox_ledger.expanduser()
+        if glassbox_source.is_file():
+            glassbox_copy = temp / "glassbox-ledger.jsonl"
+            before = glassbox_source.stat()
+            shutil.copyfile(glassbox_source, glassbox_copy)
+            after = glassbox_source.stat()
+            if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+                raise SystemExit("Glassbox ledger changed while snapshot was being read")
+            os.chmod(glassbox_copy, 0o600)
+            sources.append((glassbox_copy, "glassbox-ledger.jsonl"))
         streams_source = args.streams_db.expanduser()
         if streams_source.is_file():
             streams_copy = temp / "semantic-streams.sqlite3"
@@ -144,6 +157,25 @@ def main() -> int:
                 raise SystemExit("context journal changed while snapshot was being read")
             os.chmod(journal_copy, 0o600)
             sources.append((journal_copy, "context-journal.jsonl"))
+        manifest = temp / "profile-manifest.json"
+        manifest.write_text(json.dumps({
+            "schema_version": 2,
+            "profiles": [{
+                "profile_id": "arc",
+                "locus_id": "arc:loci",
+                "kind": "runtime-memory",
+                "database": "loci-context2.sqlite3",
+                "glassbox_ledger": "glassbox-ledger.jsonl" if glassbox_source.is_file() else None,
+                "provenance": "local Arc runtime at /data/x-cargo/loci",
+            }],
+            "legacy_sources": {
+                "semantic_streams": "semantic-streams.sqlite3" if streams_source.is_file() else None,
+                "context_journal": "context-journal.jsonl" if args.context_journal.expanduser().is_file() else None,
+            },
+            "merge_policy": "profiles remain namespaced; reconcile logically with provenance before merging facts",
+        }, indent=2) + "\n", encoding="utf-8")
+        os.chmod(manifest, 0o600)
+        sources.append((manifest, "profile-manifest.json"))
         archive_path = temp / "arc-memory.tar.gz"
         with archive_path.open("wb") as raw:
             with gzip.GzipFile(fileobj=raw, mode="wb", filename="", mtime=0) as gz:

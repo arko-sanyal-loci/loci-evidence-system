@@ -32,12 +32,14 @@ proxy-only review package and notifies the user; an rclone Drive destination
 must be configured before background Drive upload can occur.
 
 Arc runs as a separate loopback-only persistent service on port 7860. Arc's
-SQLite memory database and local context journal are copied into a private
-GitHub repository and VPS archive only as age-encrypted, content-addressed
-snapshots. The sync runs after semantic-stream journal changes and hourly as a
-fallback, retaining at most 500 encrypted good states in each configured
-backup store. It checks for a 2 GiB local and VPS free-space reserve before
-creating a snapshot. The decryption identity stays on the Arc workstation.
+LOCI context database, Glassbox ledger, semantic-stream database, and local
+context journal are copied into a private GitHub repository and VPS archive
+only as age-encrypted, content-addressed snapshots. Each archive has a profile
+manifest that keeps runtime memory namespaced and records legacy sources
+instead of silently merging them. The sync runs after semantic-stream journal
+changes and hourly as a fallback, retaining at most 500 encrypted good states
+in each configured backup store. It checks for a 2 GiB local and VPS free-space
+reserve before creating a snapshot. The decryption identity stays on the Arc workstation.
 The public source repository contains code and documentation only, never memory
 records or original media.
 
