@@ -80,8 +80,18 @@ def main() -> int:
         "loci_workstation": WORKSTATION,
         "arc_private_memory": HOME / "src/arko-sanyal-loci/arc-private-memory",
     }
+    session_state_names = {"context-journal.jsonl", "clock-calendar-context.json", "calendar-next.json"}
     session_files = sorted(
-        (path for path in STATE_DIR.iterdir() if path.is_file()),
+        (
+            path for path in STATE_DIR.iterdir()
+            if path.is_file()
+            and path != STATE_FILE
+            and (
+                path.name in session_state_names
+                or path.name.startswith("context-v") and path.suffix == ".json"
+                or path.name.startswith("packet-v") and path.suffix == ".json"
+            )
+        ),
         key=lambda path: path.stat().st_mtime_ns,
         reverse=True,
     )
